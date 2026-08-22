@@ -1,0 +1,10 @@
+/* ============ LOCKERS — "Vault Bronze" (safety deposit / metal) ============ */
+#main.theme-lockers{
+  --panel:#1c140c; --panel-2:#281c11; --line:#4a3521; --ink:#110c07;
+  --text:#f7ede0; --muted:#c2a481; --muted-2:#836a4c;
+  --ledger:#d9944a; --ledger-dim:#3a2712; --gold:#e8c06a; --gold-dim:#3a2f12;
+  --danger:#ff7860; --danger-dim:#3a1c14; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:12px;
+  --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(600px 320px at 0% -10%, rgba(217,148,74,.14), transparent 60%);
+}
+#main.theme-lockers .card{ border-radius:12px; }

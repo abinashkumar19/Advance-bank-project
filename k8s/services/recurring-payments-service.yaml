@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: recurring-payments-svc
+  namespace: veerabank
+spec:
+  type: ClusterIP
+  selector:
+    app: recurring-payments
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP

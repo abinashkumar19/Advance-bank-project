@@ -1,0 +1,26 @@
+.svc-tile{
+  text-align:left; cursor:pointer; border:1px solid var(--line); transition:transform .18s, box-shadow .18s, border-color .18s;
+  display:flex; flex-direction:column; gap:2px; position:relative;
+}
+.svc-tile:hover{transform:translateY(-4px); border-color:var(--accent); box-shadow:0 26px 60px -28px var(--accent);}
+.svc-tile:active{transform:translateY(-1px);}
+.svc-tile .icon{
+  width:42px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+  font-size:19px; color:#050308; background:linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, white 15%));
+  margin-bottom:6px;
+}
+.svc-tile .icon svg{width:22px; height:22px; flex:none;}
+.svc-tile h2{margin-top:6px; padding-right:22px;}
+.svc-tile p{margin:0; line-height:1.5;}
+.svc-tile-arrow{
+  position:absolute; top:24px; right:22px; width:20px; height:20px; color:var(--muted-2);
+  opacity:0; transform:translateX(-4px); transition:opacity .18s, transform .18s, color .18s;
+}
+.svc-tile-arrow svg{width:100%; height:100%;}
+.svc-tile:hover .svc-tile-arrow{opacity:1; transform:translateX(0); color:var(--accent);}
+
+.section-subtitle{display:block; font-family:var(--sans); font-size:12.5px; font-weight:400; color:var(--muted-2); margin-top:4px; letter-spacing:0;}
+
+.stat-tile{padding:18px 20px;}
+.stat-tile .label{font-size:10.5px; color:var(--muted-2); letter-spacing:1px; font-weight:700;}
+.stat-tile .value{font-family:var(--mono); font-size:21px; margin-top:6px; font-weight:600;}

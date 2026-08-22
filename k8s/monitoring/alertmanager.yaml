@@ -1,0 +1,41 @@
+# Alertmanager config template - Telegram receiver.
+#
+# <TELEGRAM_BOT_TOKEN> and <TELEGRAM_CHAT_ID> are placeholders only. This
+# file is safe to commit as-is. The real values come from the
+# TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID GitHub Actions secrets and are
+# substituted in at deploy time, in-memory, by the "Sync alertmanager
+# Telegram config" step in .github/workflows/deploy.yml - the rendered
+# version with real values is never written to the repo or logged, only
+# passed straight into a Kubernetes Secret (same pattern as app-secrets for
+# SMTP/Groq).
+#
+# chat_id must stay a bare number (no quotes) - Alertmanager's schema
+# requires it as an int64, not a string. Get your chat_id by messaging your
+# bot once, then hitting: https://api.telegram.org/bot<TOKEN>/getUpdates
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: telegram
+  group_by: ["alertname", "namespace", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: <TELEGRAM_BOT_TOKEN>
+        chat_id: <TELEGRAM_CHAT_ID>
+        api_url: https://api.telegram.org
+        parse_mode: HTML
+        send_resolved: true
+        message: |
+          {{ range .Alerts }}<b>{{ if eq .Status "firing" }}🔥 FIRING{{ else }}✅ RESOLVED{{ end }}: {{ .Labels.alertname }}</b>
+          Severity: {{ .Labels.severity }}
+          Namespace: {{ .Labels.namespace }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+
+          {{ end }}

@@ -1,0 +1,9 @@
+/* ============ FOREX — "Exchange Teal" (global / currency) ============ */
+#main.theme-forex{
+  --panel:#08201d; --panel-2:#0d2e29; --line:#1c5349; --ink:#051512;
+  --text:#e4fbf5; --muted:#7cc4b4; --muted-2:#448a78;
+  --ledger:#2fe6c0; --ledger-dim:#0e3a30; --gold:#6be0d8; --gold-dim:#123a37;
+  --danger:#ff7d78; --danger-dim:#3a1c1a; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:18px;
+  --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 100% -10%, rgba(47,230,192,.14), transparent 60%);
+}

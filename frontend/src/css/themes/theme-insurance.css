@@ -1,0 +1,9 @@
+/* ============ INSURANCE — "Shield Blue" (trust / protection) ============ */
+#main.theme-insurance{
+  --panel:#0a1830; --panel-2:#0f2242; --line:#1f4066; --ink:#060f1e;
+  --text:#e8f2ff; --muted:#8caed6; --muted-2:#4f709a;
+  --ledger:#3fa9ff; --ledger-dim:#0f2c48; --gold:#8fd6ff; --gold-dim:#12374d;
+  --danger:#ff7a80; --danger-dim:#3a1c1e; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:18px;
+  --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 100% -10%, rgba(63,169,255,.14), transparent 60%);
+}

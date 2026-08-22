@@ -1,0 +1,9 @@
+/* ============ ADMIN ANALYTICS — "Command Slate" (ops dashboard) ============ */
+#main.theme-admin-analytics{
+  --panel:#12151c; --panel-2:#1a1f2a; --line:#323a4a; --ink:#0a0c11;
+  --text:#eef1f7; --muted:#9aa5bd; --muted-2:#5e6980;
+  --ledger:#5ec8ff; --ledger-dim:#12303f; --gold:#ffb648; --gold-dim:#3c2e12;
+  --danger:#ff6a6a; --danger-dim:#3a1717; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:16px;
+  --display:'Space Grotesk', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 50% -10%, rgba(94,200,255,.10), transparent 60%);
+}

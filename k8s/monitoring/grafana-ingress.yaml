@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # Grafana's own unauthenticated health endpoint - "/" 302-redirects to
+    # /login, which the ALB health check would treat as unhealthy.
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    # Once you have an ACM cert, uncomment these and add HTTPS:443 above -
+    # same as k8s/ingress.yaml. Dev-only: no auth in front of this beyond
+    # Grafana's own login, so put it behind HTTPS + ideally an allowlist
+    # (alb.ingress.kubernetes.io/inbound-cidrs) before using in anything
+    # beyond a dev/demo account.
+    # alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:<ACCOUNT_ID>:certificate/<CERT_ID>"
+    # alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Name Helm gives the service: "<release-name>-grafana".
+                # The release is installed as "kube-prometheus-stack" in
+                # terraform/modules/monitoring/main.tf.
+                name: kube-prometheus-stack-grafana
+                port:
+                  number: 80

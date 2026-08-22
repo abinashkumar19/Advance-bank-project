@@ -1,0 +1,9 @@
+/* ============ BUDGETING — "Ledger Sage" (careful / grounded) ============ */
+#main.theme-budgeting{
+  --panel:#101c14; --panel-2:#16281c; --line:#2c4a34; --ink:#0a130c;
+  --text:#eafbee; --muted:#98c2a2; --muted-2:#587e63;
+  --ledger:#5fd97e; --ledger-dim:#153a20; --gold:#c9e26b; --gold-dim:#33380f;
+  --danger:#ff7d6e; --danger-dim:#3a1e17; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:16px;
+  --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(600px 320px at 0% -10%, rgba(95,217,126,.14), transparent 60%);
+}

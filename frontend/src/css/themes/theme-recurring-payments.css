@@ -1,0 +1,9 @@
+/* ============ RECURRING PAYMENTS — "Orbit Cycle" (indigo/cyan loop) ============ */
+#main.theme-recurring-payments{
+  --panel:#101229; --panel-2:#161a3a; --line:#2b3167; --ink:#0a0c1c;
+  --text:#eef0ff; --muted:#9aa0d8; --muted-2:#5c62a0;
+  --ledger:#5c7cff; --ledger-dim:#181f4a; --gold:#5ce1ff; --gold-dim:#123244;
+  --danger:#ff6f81; --danger-dim:#3a1c24; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:20px;
+  --display:'Space Grotesk', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 100% -10%, rgba(92,124,255,.14), transparent 60%);
+}
