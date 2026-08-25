@@ -65,6 +65,28 @@ variable "node_max_size" {
   default = 9
 }
 
+variable "gpu_node_instance_types" {
+  description = "GPU instance type dedicated to the self-hosted Ollama chatbot model server (see k8s/services/ollama-deployment.yaml). g4dn.xlarge: 4 vCPU / 16GiB / 1x NVIDIA T4 - the standard cost-effective choice for LLM inference at this model scale (~$0.53/hr on-demand as of writing, billed whether or not it's actively serving requests)."
+  type        = list(string)
+  default     = ["g4dn.xlarge"]
+}
+
+variable "gpu_node_desired_size" {
+  description = "Just 1 - this node group exists solely for the single-replica ollama Deployment. Bumping this without also scaling ollama's own replica count just wastes money on an idle node."
+  type        = number
+  default     = 1
+}
+
+variable "gpu_node_min_size" {
+  type    = number
+  default = 1
+}
+
+variable "gpu_node_max_size" {
+  type    = number
+  default = 1
+}
+
 variable "dynamodb_billing_mode" {
   description = "PAY_PER_REQUEST (on-demand) or PROVISIONED"
   type        = string

@@ -37,3 +37,19 @@ variable "node_max_size" {
 variable "node_desired_size" {
   type = number
 }
+
+variable "gpu_node_instance_types" {
+  type = list(string)
+}
+
+variable "gpu_node_min_size" {
+  type = number
+}
+
+variable "gpu_node_max_size" {
+  type = number
+}
+
+variable "gpu_node_desired_size" {
+  type = number
+}

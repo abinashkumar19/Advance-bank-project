@@ -31,6 +31,36 @@ module "eks" {
         role = "app"
       }
     }
+
+    # GPU node group - exclusively for the self-hosted Ollama chatbot
+    # model server (see k8s/services/ollama-deployment.yaml). AL2_x86_64_GPU
+    # ships with NVIDIA drivers preinstalled, but Kubernetes still needs
+    # the NVIDIA device plugin DaemonSet to actually expose GPUs as an
+    # allocatable resource - see helm_release.nvidia_device_plugin below.
+    # Tainted so nothing except Ollama (which has the matching toleration)
+    # ever gets scheduled here - this instance type costs real money per
+    # hour even sitting idle, and nothing else in this app needs a GPU.
+    gpu = {
+      instance_types = var.gpu_node_instance_types
+      capacity_type  = "ON_DEMAND"
+      ami_type       = "AL2_x86_64_GPU"
+
+      min_size     = var.gpu_node_min_size
+      max_size     = var.gpu_node_max_size
+      desired_size = var.gpu_node_desired_size
+
+      labels = {
+        role = "gpu"
+      }
+
+      taints = {
+        gpu = {
+          key    = "nvidia.com/gpu"
+          value  = "true"
+          effect = "NO_SCHEDULE"
+        }
+      }
+    }
   }
 }
 
@@ -153,4 +183,47 @@ resource "helm_release" "alb_controller" {
   }
 
   depends_on = [kubernetes_service_account.alb_controller]
+}
+
+# ---------------------------------------------------------------------------
+# NVIDIA device plugin - required for Kubernetes to expose the GPU node
+# group's GPUs as an allocatable resource (nvidia.com/gpu). The GPU node
+# group's AL2_x86_64_GPU AMI ships NVIDIA drivers preinstalled, but that
+# alone isn't enough - without this DaemonSet, kubelet has no way to
+# advertise the GPU to the scheduler at all, and any pod requesting
+# nvidia.com/gpu would just stay Pending forever.
+# ---------------------------------------------------------------------------
+
+resource "helm_release" "nvidia_device_plugin" {
+  name       = "nvidia-device-plugin"
+  repository = "https://nvidia.github.io/k8s-device-plugin"
+  chart      = "nvidia-device-plugin"
+  namespace  = "kube-system"
+  version    = "0.16.2"
+
+  # Only ever run this DaemonSet on the tainted GPU node group - it has
+  # nothing to do on the regular app nodes, and the toleration keeps it
+  # off nodes it doesn't belong on.
+  set {
+    name  = "tolerations[0].key"
+    value = "nvidia.com/gpu"
+  }
+  set {
+    name  = "tolerations[0].operator"
+    value = "Equal"
+  }
+  set {
+    name  = "tolerations[0].value"
+    value = "true"
+  }
+  set {
+    name  = "tolerations[0].effect"
+    value = "NoSchedule"
+  }
+  set {
+    name  = "nodeSelector.role"
+    value = "gpu"
+  }
+
+  depends_on = [module.eks]
 }
