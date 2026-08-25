@@ -23,12 +23,19 @@ spec:
         app: ollama
     spec:
       serviceAccountName: backend-app
+      # Schedule exclusively onto the GPU node group (terraform/modules/eks)
+      # - the taint there keeps every other pod off it, and this
+      # toleration + nodeSelector pair is what lets Ollama (and only
+      # Ollama) land there instead.
+      nodeSelector:
+        role: gpu
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
       containers:
         - name: ollama
-          # Official public image, used directly - no custom build/ECR
-          # repo for this one (see terraform/services.tf). Simpler than
-          # baking the model into a custom image, at the cost of a slower
-          # first-ever startup while it downloads.
           image: "ollama/ollama:latest"
           command: ["/bin/sh", "-c"]
           args:
@@ -43,13 +50,15 @@ spec:
               echo "Ready."
               wait $SERVE_PID
           env:
+            # GPU inference removes the speed constraint that motivated
+            # keeping this small on CPU, so this is upgraded from the
+            # earlier 3B model to a more capable one - directly helps the
+            # tool-calling reliability the smaller model struggled with
+            # (see backend/services/chatbot/app/main.py's grounding-check
+            # comments), on top of being dramatically faster. Must match
+            # OLLAMA_MODEL in k8s/services/chatbot-deployment.yaml.
             - name: OLLAMA_MODEL
-              value: "qwen2.5:3b-instruct"
-            # Keep the model resident between requests instead of
-            # unloading it after Ollama's 5-minute default idle timeout -
-            # reloading a multi-GB model from disk adds tens of seconds
-            # of latency to whichever chat message happens to arrive
-            # after a quiet period.
+              value: "qwen2.5:7b-instruct"
             - name: OLLAMA_KEEP_ALIVE
               value: "-1"
           ports:
@@ -57,18 +66,19 @@ spec:
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
-          # CPU-only sizing for a 3B-class model (~2GB resident). A
-          # t3.medium's real allocatable memory is only ~3.2Gi after
-          # EKS's system reservations, so this stays comfortably under
-          # that with headroom left for the per-node DaemonSets
-          # (kube-proxy, VPC CNI, EBS CSI) that also run on every node.
+          # g4dn.xlarge has 4 vCPU / 16GiB / 1 GPU - generous headroom
+          # here since this is the only pod that will ever land on this
+          # node (see the taint/toleration above), unlike the tight
+          # t3.medium sizing the app nodes need to share across many pods.
           resources:
             requests:
-              cpu: "1200m"
-              memory: "2Gi"
+              cpu: "3000m"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
             limits:
-              cpu: "1800m"
-              memory: "2560Mi"
+              cpu: "4000m"
+              memory: "14Gi"
+              nvidia.com/gpu: "1" # extended resources like GPUs require requests == limits
           # Model pull on first boot can take a while depending on
           # network speed - startupProbe gives it room before
           # readiness/liveness start counting failures against it.
