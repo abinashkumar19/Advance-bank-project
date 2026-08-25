@@ -131,3 +131,5 @@ def write_audit_log(actor_user_id: str, action: str, details: Dict[str, Any]) ->
         )
     except Exception as exc:  # noqa: BLE001
         print(f"[audit-log] failed to write entry: {exc}")
+
+
