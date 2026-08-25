@@ -1,0 +1,55 @@
+{
+  "Comment": "Loan approval workflow - scores the applicant, branches on the result, and writes a decision the loans-service can read back.",
+  "StartAt": "ComputeCreditScore",
+  "States": {
+    "ComputeCreditScore": {
+      "Type": "Task",
+      "Resource": "${credit_score_lambda_arn}",
+      "ResultPath": "$.credit_result",
+      "Next": "EvaluateDecision"
+    },
+    "EvaluateDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.credit_result.score",
+          "NumericGreaterThanEquals": 700,
+          "Next": "Approve"
+        },
+        {
+          "Variable": "$.credit_result.score",
+          "NumericGreaterThanEquals": 600,
+          "Next": "ManualReview"
+        }
+      ],
+      "Default": "Reject"
+    },
+    "Approve": {
+      "Type": "Pass",
+      "Parameters": {
+        "decision": "approved",
+        "user_id.$": "$.user_id",
+        "credit_result.$": "$.credit_result"
+      },
+      "End": true
+    },
+    "ManualReview": {
+      "Type": "Pass",
+      "Parameters": {
+        "decision": "manual_review",
+        "user_id.$": "$.user_id",
+        "credit_result.$": "$.credit_result"
+      },
+      "End": true
+    },
+    "Reject": {
+      "Type": "Pass",
+      "Parameters": {
+        "decision": "rejected",
+        "user_id.$": "$.user_id",
+        "credit_result.$": "$.credit_result"
+      },
+      "End": true
+    }
+  }
+}

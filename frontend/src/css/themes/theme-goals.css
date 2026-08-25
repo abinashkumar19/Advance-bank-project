@@ -1,0 +1,9 @@
+/* ============ GOALS — "Summit Gold" (aspiration / achievement) ============ */
+#main.theme-goals{
+  --panel:#241708; --panel-2:#33220c; --line:#5a4116; --ink:#170e05;
+  --text:#fff6e6; --muted:#dbb87f; --muted-2:#96794a;
+  --ledger:#ffb648; --ledger-dim:#3d2c10; --gold:#ffd98a; --gold-dim:#3d3212;
+  --danger:#ff7a68; --danger-dim:#3a1e18; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:18px;
+  --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 0% -10%, rgba(255,182,72,.16), transparent 60%);
+}

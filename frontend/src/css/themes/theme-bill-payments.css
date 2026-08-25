@@ -1,0 +1,9 @@
+/* ============ BILL PAYMENTS — "Utility Amber" (warm copper) ============ */
+#main.theme-bill-payments{
+  --panel:#241608; --panel-2:#331e0b; --line:#5a3a15; --ink:#170d05;
+  --text:#fff3e6; --muted:#d1a877; --muted-2:#8c6a3f;
+  --ledger:#ff9d3f; --ledger-dim:#3d2410; --gold:#ffcd6b; --gold-dim:#3d2f10;
+  --danger:#ff6858; --danger-dim:#3a1a14; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:16px;
+  --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(600px 320px at 0% -10%, rgba(255,157,63,.16), transparent 60%);
+}

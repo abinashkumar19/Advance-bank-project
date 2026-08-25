@@ -1,0 +1,10 @@
+/* ============ WEBHOOKS — "Wire Violet" (technical / dev-facing) ============ */
+#main.theme-webhooks{
+  --panel:#140f24; --panel-2:#1c1534; --line:#3a2e63; --ink:#0c081a;
+  --text:#f1eeff; --muted:#a89fd6; --muted-2:#6c62a0;
+  --ledger:#8b7cff; --ledger-dim:#241c4a; --gold:#7cf0e0; --gold-dim:#0f3833;
+  --danger:#ff6f81; --danger-dim:#3a1c24; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:14px;
+  --display:'IBM Plex Mono', monospace; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(600px 320px at 100% -10%, rgba(139,124,255,.16), transparent 60%);
+}
+#main.theme-webhooks .card{ border-radius:14px; }

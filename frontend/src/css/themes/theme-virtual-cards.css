@@ -1,0 +1,10 @@
+/* ============ VIRTUAL CARDS — "Neon Grid" (digital / synthetic) ============ */
+#main.theme-virtual-cards{
+  --panel:#170a26; --panel-2:#210f36; --line:#442064; --ink:#0e0619;
+  --text:#f7ecff; --muted:#c79ce6; --muted-2:#7d5aa0;
+  --ledger:#e05cff; --ledger-dim:#3a1447; --gold:#5cf2ff; --gold-dim:#123844;
+  --danger:#ff6690; --danger-dim:#3a1526; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:14px;
+  --display:'Space Grotesk', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
+  background: radial-gradient(650px 340px at 100% -10%, rgba(224,92,255,.16), transparent 60%);
+}
+#main.theme-virtual-cards .card{ border-radius:14px; }

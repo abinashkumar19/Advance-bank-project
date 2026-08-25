@@ -1,0 +1,15 @@
+# Persists downloaded model weights across pod restarts - without this,
+# every restart re-downloads several GB from Ollama's model registry,
+# which is slow and wastes bandwidth for no reason.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: veerabank
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 15Gi

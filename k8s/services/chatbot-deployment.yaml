@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatbot
+  namespace: veerabank
+  labels:
+    app: chatbot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chatbot
+  template:
+    metadata:
+      labels:
+        app: chatbot
+    spec:
+      serviceAccountName: backend-app
+      containers:
+        - name: chatbot
+          # Replaced at deploy time with the real ECR image + tag (see deploy.yml)
+          image: "<ECR_REPO_URL_CHATBOT>:latest"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: OLLAMA_URL
+              value: "http://ollama-svc.veerabank.svc.cluster.local:11434"
+            - name: OLLAMA_MODEL
+              value: "qwen2.5:3b-instruct"
+            - name: ACCOUNTS_SERVICE_URL
+              value: "http://accounts-svc.veerabank.svc.cluster.local"
+            - name: TRANSFERS_SERVICE_URL
+              value: "http://transfers-svc.veerabank.svc.cluster.local"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              cpu: "250m"
+              memory: "192Mi"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20

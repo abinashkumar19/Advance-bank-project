@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: veerabank
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  # A first-ever pull of the model over the internet (Ollama's own
+  # registry, not ECR) can genuinely take a while depending on network
+  # speed - this needs real margin so Kubernetes doesn't mark the
+  # rollout failed while it's still downloading. Every deploy after the
+  # first is fast (the model persists on the PVC below, survives pod
+  # restarts), but CI can't assume it isn't the first.
+  progressDeadlineSeconds: 1800
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      serviceAccountName: backend-app
+      containers:
+        - name: ollama
+          # Official public image, used directly - no custom build/ECR
+          # repo for this one (see terraform/services.tf). Simpler than
+          # baking the model into a custom image, at the cost of a slower
+          # first-ever startup while it downloads.
+          image: "ollama/ollama:latest"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              ollama serve &
+              SERVE_PID=$!
+              echo "Waiting for Ollama server to come up..."
+              until ollama list >/dev/null 2>&1; do sleep 2; done
+              echo "Pulling $OLLAMA_MODEL (no-op if already on the persisted volume)..."
+              ollama pull "$OLLAMA_MODEL"
+              echo "Ready."
+              wait $SERVE_PID
+          env:
+            - name: OLLAMA_MODEL
+              value: "qwen2.5:3b-instruct"
+            # Keep the model resident between requests instead of
+            # unloading it after Ollama's 5-minute default idle timeout -
+            # reloading a multi-GB model from disk adds tens of seconds
+            # of latency to whichever chat message happens to arrive
+            # after a quiet period.
+            - name: OLLAMA_KEEP_ALIVE
+              value: "-1"
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          # CPU-only sizing for a 3B-class model (~2GB resident). A
+          # t3.medium's real allocatable memory is only ~3.2Gi after
+          # EKS's system reservations, so this stays comfortably under
+          # that with headroom left for the per-node DaemonSets
+          # (kube-proxy, VPC CNI, EBS CSI) that also run on every node.
+          resources:
+            requests:
+              cpu: "1200m"
+              memory: "2Gi"
+            limits:
+              cpu: "1800m"
+              memory: "2560Mi"
+          # Model pull on first boot can take a while depending on
+          # network speed - startupProbe gives it room before
+          # readiness/liveness start counting failures against it.
+          startupProbe:
+            exec:
+              command: ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\""]
+            periodSeconds: 15
+            failureThreshold: 120 # 30 minutes of grace on first pull - matches progressDeadlineSeconds above
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\""]
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        # Persists the downloaded model across pod restarts - without
+        # this, every restart re-downloads several GB for no reason.
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
