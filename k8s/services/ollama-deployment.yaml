@@ -23,16 +23,16 @@ spec:
         app: ollama
     spec:
       serviceAccountName: backend-app
-      # Schedule exclusively onto the GPU node group (terraform/modules/eks)
-      # - the taint there keeps every other pod off it, and this
-      # toleration + nodeSelector pair is what lets Ollama (and only
-      # Ollama) land there instead.
+      # Schedule exclusively onto the dedicated Ollama node group
+      # (terraform/modules/eks) - the taint there keeps every other pod
+      # off it, and this toleration + nodeSelector pair is what lets
+      # Ollama (and only Ollama) land there instead.
       nodeSelector:
-        role: gpu
+        role: ollama
       tolerations:
-        - key: "nvidia.com/gpu"
+        - key: "dedicated"
           operator: "Equal"
-          value: "true"
+          value: "ollama"
           effect: "NoSchedule"
       containers:
         - name: ollama
@@ -50,13 +50,17 @@ spec:
               echo "Ready."
               wait $SERVE_PID
           env:
-            # GPU inference removes the speed constraint that motivated
-            # keeping this small on CPU, so this is upgraded from the
-            # earlier 3B model to a more capable one - directly helps the
-            # tool-calling reliability the smaller model struggled with
-            # (see backend/services/chatbot/app/main.py's grounding-check
-            # comments), on top of being dramatically faster. Must match
-            # OLLAMA_MODEL in k8s/services/chatbot-deployment.yaml.
+            # A dedicated (but CPU-only) node still isn't as fast as GPU
+            # inference would be, but a real 8-vCPU node the model
+            # doesn't have to share with 30+ other pods is meaningfully
+            # better than the old shared-t3.medium setup, and 7B is
+            # noticeably more reliable at the multi-step tool-calling
+            # this chatbot does (see backend/services/chatbot/app/main.py's
+            # grounding-check comments) than the original 3B model. If
+            # this is still too slow in practice, dropping back to
+            # "qwen2.5:3b-instruct" is a one-line change - just keep this
+            # in sync with OLLAMA_MODEL in
+            # k8s/services/chatbot-deployment.yaml either way.
             - name: OLLAMA_MODEL
               value: "qwen2.5:7b-instruct"
             - name: OLLAMA_KEEP_ALIVE
@@ -66,19 +70,20 @@ spec:
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
-          # g4dn.xlarge has 4 vCPU / 16GiB / 1 GPU - generous headroom
-          # here since this is the only pod that will ever land on this
-          # node (see the taint/toleration above), unlike the tight
-          # t3.medium sizing the app nodes need to share across many pods.
+          # m6i.2xlarge has 8 vCPU / 32GiB - generous headroom here since
+          # this is the only pod that will ever land on this node (see
+          # the taint/toleration above), unlike the tight t3.medium
+          # sizing the app nodes need to share across many pods. No GPU
+          # resource request - this is a standard compute instance now,
+          # see the node group comment in terraform/modules/eks/main.tf
+          # for why.
           resources:
             requests:
-              cpu: "3000m"
-              memory: "8Gi"
-              nvidia.com/gpu: "1"
+              cpu: "5000m"
+              memory: "12Gi"
             limits:
-              cpu: "4000m"
-              memory: "14Gi"
-              nvidia.com/gpu: "1" # extended resources like GPUs require requests == limits
+              cpu: "7000m"
+              memory: "20Gi"
           # Model pull on first boot can take a while depending on
           # network speed - startupProbe gives it room before
           # readiness/liveness start counting failures against it.
