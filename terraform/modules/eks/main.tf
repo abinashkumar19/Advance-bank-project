@@ -33,17 +33,20 @@ module "eks" {
     }
 
     # GPU node group - exclusively for the self-hosted Ollama chatbot
-    # model server (see k8s/services/ollama-deployment.yaml). AL2_x86_64_GPU
-    # ships with NVIDIA drivers preinstalled, but Kubernetes still needs
-    # the NVIDIA device plugin DaemonSet to actually expose GPUs as an
-    # allocatable resource - see helm_release.nvidia_device_plugin below.
+    # model server (see k8s/services/ollama-deployment.yaml).
+    # AL2023_x86_64_NVIDIA ships with NVIDIA drivers preinstalled (the
+    # AL2-based AL2_x86_64_GPU type this used originally is only valid for
+    # EKS <=1.32 - this cluster runs 1.34, see var.eks_cluster_version),
+    # but Kubernetes still needs the NVIDIA device plugin DaemonSet to
+    # actually expose GPUs as an allocatable resource - see
+    # helm_release.nvidia_device_plugin below.
     # Tainted so nothing except Ollama (which has the matching toleration)
     # ever gets scheduled here - this instance type costs real money per
     # hour even sitting idle, and nothing else in this app needs a GPU.
     gpu = {
       instance_types = var.gpu_node_instance_types
       capacity_type  = "ON_DEMAND"
-      ami_type       = "AL2_x86_64_GPU"
+      ami_type       = "AL2023_x86_64_NVIDIA"
 
       min_size     = var.gpu_node_min_size
       max_size     = var.gpu_node_max_size
@@ -188,8 +191,8 @@ resource "helm_release" "alb_controller" {
 # ---------------------------------------------------------------------------
 # NVIDIA device plugin - required for Kubernetes to expose the GPU node
 # group's GPUs as an allocatable resource (nvidia.com/gpu). The GPU node
-# group's AL2_x86_64_GPU AMI ships NVIDIA drivers preinstalled, but that
-# alone isn't enough - without this DaemonSet, kubelet has no way to
+# group's AL2023_x86_64_NVIDIA AMI ships NVIDIA drivers preinstalled, but
+# that alone isn't enough - without this DaemonSet, kubelet has no way to
 # advertise the GPU to the scheduler at all, and any pod requesting
 # nvidia.com/gpu would just stay Pending forever.
 # ---------------------------------------------------------------------------
