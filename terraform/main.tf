@@ -110,10 +110,10 @@ module "eks" {
   node_max_size        = var.node_max_size
   node_desired_size    = var.node_desired_size
 
-  gpu_node_instance_types = var.gpu_node_instance_types
-  gpu_node_min_size       = var.gpu_node_min_size
-  gpu_node_max_size       = var.gpu_node_max_size
-  gpu_node_desired_size   = var.gpu_node_desired_size
+  ollama_node_instance_types = var.ollama_node_instance_types
+  ollama_node_min_size       = var.ollama_node_min_size
+  ollama_node_max_size       = var.ollama_node_max_size
+  ollama_node_desired_size   = var.ollama_node_desired_size
 }
 
 module "dynamodb" {

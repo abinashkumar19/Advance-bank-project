@@ -32,34 +32,40 @@ module "eks" {
       }
     }
 
-    # GPU node group - exclusively for the self-hosted Ollama chatbot
-    # model server (see k8s/services/ollama-deployment.yaml).
-    # AL2023_x86_64_NVIDIA ships with NVIDIA drivers preinstalled (the
-    # AL2-based AL2_x86_64_GPU type this used originally is only valid for
-    # EKS <=1.32 - this cluster runs 1.34, see var.eks_cluster_version),
-    # but Kubernetes still needs the NVIDIA device plugin DaemonSet to
-    # actually expose GPUs as an allocatable resource - see
-    # helm_release.nvidia_device_plugin below.
+    # Dedicated node group - exclusively for the self-hosted Ollama
+    # chatbot model server (see k8s/services/ollama-deployment.yaml).
+    # This was originally a GPU node group (g4dn.xlarge), but G/VT-family
+    # instances require an EC2 service quota that defaults to 0 vCPUs on
+    # many AWS accounts, and launching them can also hit IAM/SCP
+    # authorization walls that need an account admin to resolve - neither
+    # is something Terraform can route around. Standard compute instance
+    # families (m6i, c6i, etc.) essentially never run into that, so this
+    # trades "GPU-fast" for "no approval process, works today": a
+    # dedicated 8-vCPU instance the model doesn't have to share with 30+
+    # other pods, which is still a real step up from the shared t3.medium
+    # pool even without a GPU. If you resolve the GPU quota/IAM issue
+    # later, swap instance_types to a g-series type + set ami_type back to
+    # "AL2023_x86_64_NVIDIA" + re-add the NVIDIA device plugin (removed
+    # below) + a nvidia.com/gpu resource request in the deployment.
     # Tainted so nothing except Ollama (which has the matching toleration)
-    # ever gets scheduled here - this instance type costs real money per
-    # hour even sitting idle, and nothing else in this app needs a GPU.
-    gpu = {
-      instance_types = var.gpu_node_instance_types
+    # ever gets scheduled here - this instance costs real money per hour
+    # even sitting idle, and nothing else in this app needs this much CPU.
+    ollama = {
+      instance_types = var.ollama_node_instance_types
       capacity_type  = "ON_DEMAND"
-      ami_type       = "AL2023_x86_64_NVIDIA"
 
-      min_size     = var.gpu_node_min_size
-      max_size     = var.gpu_node_max_size
-      desired_size = var.gpu_node_desired_size
+      min_size     = var.ollama_node_min_size
+      max_size     = var.ollama_node_max_size
+      desired_size = var.ollama_node_desired_size
 
       labels = {
-        role = "gpu"
+        role = "ollama"
       }
 
       taints = {
-        gpu = {
-          key    = "nvidia.com/gpu"
-          value  = "true"
+        dedicated = {
+          key    = "dedicated"
+          value  = "ollama"
           effect = "NO_SCHEDULE"
         }
       }
@@ -186,47 +192,4 @@ resource "helm_release" "alb_controller" {
   }
 
   depends_on = [kubernetes_service_account.alb_controller]
-}
-
-# ---------------------------------------------------------------------------
-# NVIDIA device plugin - required for Kubernetes to expose the GPU node
-# group's GPUs as an allocatable resource (nvidia.com/gpu). The GPU node
-# group's AL2023_x86_64_NVIDIA AMI ships NVIDIA drivers preinstalled, but
-# that alone isn't enough - without this DaemonSet, kubelet has no way to
-# advertise the GPU to the scheduler at all, and any pod requesting
-# nvidia.com/gpu would just stay Pending forever.
-# ---------------------------------------------------------------------------
-
-resource "helm_release" "nvidia_device_plugin" {
-  name       = "nvidia-device-plugin"
-  repository = "https://nvidia.github.io/k8s-device-plugin"
-  chart      = "nvidia-device-plugin"
-  namespace  = "kube-system"
-  version    = "0.16.2"
-
-  # Only ever run this DaemonSet on the tainted GPU node group - it has
-  # nothing to do on the regular app nodes, and the toleration keeps it
-  # off nodes it doesn't belong on.
-  set {
-    name  = "tolerations[0].key"
-    value = "nvidia.com/gpu"
-  }
-  set {
-    name  = "tolerations[0].operator"
-    value = "Equal"
-  }
-  set {
-    name  = "tolerations[0].value"
-    value = "true"
-  }
-  set {
-    name  = "tolerations[0].effect"
-    value = "NoSchedule"
-  }
-  set {
-    name  = "nodeSelector.role"
-    value = "gpu"
-  }
-
-  depends_on = [module.eks]
 }
