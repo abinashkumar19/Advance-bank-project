@@ -20,7 +20,12 @@ async function renderDashboard() {
       <div class="identity-strip fade-in" id="identity-strip" style="display:none;">
         <div class="identity-cell">
           <div class="identity-label">Account number</div>
-          <div class="identity-value" id="id-acct-num" onclick="copyIdentity('acct')">—</div>
+          <div class="identity-value-row">
+            <div class="identity-value" id="id-acct-num" onclick="copyIdentity('acct')">—</div>
+            <button type="button" class="identity-copy-btn" onclick="copyIdentity('acct')" title="Copy account number" aria-label="Copy account number">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            </button>
+          </div>
         </div>
         <div class="identity-cell">
           <div class="identity-label">Account holder</div>

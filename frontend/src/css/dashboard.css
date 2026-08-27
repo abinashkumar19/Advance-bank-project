@@ -30,6 +30,17 @@
 .identity-value:hover{color:var(--accent);}
 .identity-value.name{font-family:var(--display); font-size:17px; font-weight:600; cursor:default;}
 .identity-value.name:hover{color:var(--text);}
+.identity-value-row{display:flex; align-items:center; gap:8px;}
+.identity-value-row .identity-value{margin-top:0;}
+.identity-copy-btn{
+  flex:none; width:26px; height:26px; margin-top:5px; border-radius:8px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:1px solid transparent; color:var(--muted-2);
+  cursor:pointer; transition:color .15s, border-color .15s, background .15s;
+}
+.identity-copy-btn svg{width:14px; height:14px;}
+.identity-copy-btn:hover{color:var(--accent); border-color:var(--line); background:var(--panel-2);}
+.identity-copy-btn:active{transform:scale(.92);}
 
 /* ---------------- Onboarding modal ---------------- */
 .onboard-hero{text-align:center; padding:8px 0 4px;}

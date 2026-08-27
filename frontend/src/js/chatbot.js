@@ -65,6 +65,21 @@ function appendChatBubble(role, text) {
   return div;
 }
 
+function appendTypingBubble() {
+  // Separate from appendChatBubble on purpose: that one is textContent-only
+  // for every real message (user input, model replies) so nothing
+  // user/model-controlled is ever rendered as HTML. This bubble's markup
+  // is 100% static (no interpolated data at all), so innerHTML here is
+  // safe - it's just an animated "typing" indicator, not user content.
+  const body = document.getElementById("chat-body");
+  const div = document.createElement("div");
+  div.className = "chat-msg bot typing";
+  div.innerHTML = `<div class="bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+
 async function sendChatMessage() {
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
@@ -74,8 +89,7 @@ async function sendChatMessage() {
   chatHistory.push({ role: "user", content: text });
 
   chatSending = true;
-  const typingEl = appendChatBubble("bot", "…");
-  typingEl.classList.add("typing");
+  const typingEl = appendTypingBubble();
   document.getElementById("chat-send").disabled = true;
 
   try {
