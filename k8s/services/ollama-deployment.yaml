@@ -65,13 +65,18 @@ spec:
               echo "Ready."
               wait $SERVE_PID
           env:
-            # Back to the smaller model - no dedicated node this time
-            # (see the note above the initContainers), so this needs to
-            # behave on the shared t3.medium pool the same way it did
-            # originally. Must match OLLAMA_MODEL in
-            # k8s/services/chatbot-deployment.yaml.
+            # Even lighter than before - Qwen's small models hold up
+            # reasonably well at tool/function-calling relative to their
+            # size, which matters here (this model has to reliably call
+            # verify_recipient_account/send_money). Smaller = faster on
+            # CPU, at some real cost to instruction-following reliability
+            # - the grounding check in _run_tool (see
+            # backend/services/chatbot/app/main.py) exists specifically
+            # so a less-reliable model doesn't become a safety problem,
+            # just an occasional "ask again" UX hiccup. Must match
+            # OLLAMA_MODEL in k8s/services/chatbot-deployment.yaml.
             - name: OLLAMA_MODEL
-              value: "qwen2.5:3b-instruct"
+              value: "qwen2.5:1.5b-instruct"
             - name: OLLAMA_KEEP_ALIVE
               value: "-1"
           ports:
@@ -79,16 +84,15 @@ spec:
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
-          # CPU-only sizing for a 3B-class model (~2GB resident) sharing
-          # a t3.medium node with other pods - see the project README for
-          # the allocatable-memory math on why this specific ceiling.
+          # A 1.5B model needs meaningfully less RAM/CPU than the 3B one
+          # this used to run - trimmed down accordingly.
           resources:
             requests:
+              cpu: "800m"
+              memory: "1.5Gi"
+            limits:
               cpu: "1200m"
               memory: "2Gi"
-            limits:
-              cpu: "1800m"
-              memory: "2560Mi"
           startupProbe:
             exec:
               command: ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\""]
