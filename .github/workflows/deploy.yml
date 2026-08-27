@@ -1,4 +1,3 @@
-
 name: Deploy Cloud Bank
 
 # Two jobs, matching the README's "CI/CD (fully automated)" section:
@@ -42,6 +41,7 @@ jobs:
       sns_user_registered_topic_arn: ${{ steps.tf-out.outputs.sns_user_registered_topic_arn }}
       transactions_history_api_url: ${{ steps.tf-out.outputs.transactions_history_api_url }}
       telegram_secret_name: ${{ steps.tf-out.outputs.telegram_secret_name }}
+      ollama_model_cache_bucket: ${{ steps.tf-out.outputs.ollama_model_cache_bucket }}
       eks_cluster_name: ${{ steps.tf-out.outputs.eks_cluster_name }}
     steps:
       - uses: actions/checkout@v4
@@ -164,6 +164,7 @@ jobs:
           echo "sns_user_registered_topic_arn=$(terraform output -raw sns_user_registered_topic_arn)" >> "$GITHUB_OUTPUT"
           echo "transactions_history_api_url=$(terraform output -raw transactions_history_api_url)" >> "$GITHUB_OUTPUT"
           echo "telegram_secret_name=$(terraform output -raw telegram_secret_name)" >> "$GITHUB_OUTPUT"
+          echo "ollama_model_cache_bucket=$(terraform output -raw ollama_model_cache_bucket)" >> "$GITHUB_OUTPUT"
           echo "eks_cluster_name=$(terraform output -raw eks_cluster_name)" >> "$GITHUB_OUTPUT"
 
   deploy:
@@ -220,12 +221,14 @@ jobs:
         # Same substitutions the README describes doing by hand ("Wire up
         # the manifests"), scripted: every <ECR_REPO_URL_X> placeholder,
         # <SNS_USER_REGISTERED_TOPIC_ARN>, <TRANSACTIONS_HISTORY_API_URL>,
-        # and the serviceaccount's IRSA role-arn annotation.
+        # <OLLAMA_MODEL_CACHE_BUCKET>, and the serviceaccount's IRSA
+        # role-arn annotation.
         env:
           ECR_URLS: ${{ needs.terraform.outputs.ecr_repository_urls }}
           IRSA_ROLE_ARN: ${{ needs.terraform.outputs.backend_irsa_role_arn }}
           SNS_TOPIC_ARN: ${{ needs.terraform.outputs.sns_user_registered_topic_arn }}
           HISTORY_API_URL: ${{ needs.terraform.outputs.transactions_history_api_url }}
+          OLLAMA_BUCKET: ${{ needs.terraform.outputs.ollama_model_cache_bucket }}
         run: |
           set -euo pipefail
           mkdir -p rendered/services rendered/frontend
@@ -245,6 +248,7 @@ jobs:
               -e "s#${placeholder}#${url}:${{ github.sha }}#" \
               -e "s#<SNS_USER_REGISTERED_TOPIC_ARN>#${SNS_TOPIC_ARN}#" \
               -e "s#<TRANSACTIONS_HISTORY_API_URL>#${HISTORY_API_URL}#" \
+              -e "s#<OLLAMA_MODEL_CACHE_BUCKET>#${OLLAMA_BUCKET}#" \
               "$f" > "$out"
           done
 
@@ -378,5 +382,3 @@ jobs:
             sleep 10
           done
           echo "### Grafana is live at: http://${GRAFANA_HOST:-<pending - check kubectl get ingress -n monitoring>}/ (user: admin, password: \`terraform output -raw grafana_admin_password\`)" >> "$GITHUB_STEP_SUMMARY"
-
-
