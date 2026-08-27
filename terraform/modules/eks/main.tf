@@ -31,45 +31,6 @@ module "eks" {
         role = "app"
       }
     }
-
-    # Dedicated node group - exclusively for the self-hosted Ollama
-    # chatbot model server (see k8s/services/ollama-deployment.yaml).
-    # This was originally a GPU node group (g4dn.xlarge), but G/VT-family
-    # instances require an EC2 service quota that defaults to 0 vCPUs on
-    # many AWS accounts, and launching them can also hit IAM/SCP
-    # authorization walls that need an account admin to resolve - neither
-    # is something Terraform can route around. Standard compute instance
-    # families (m6i, c6i, etc.) essentially never run into that, so this
-    # trades "GPU-fast" for "no approval process, works today": a
-    # dedicated 8-vCPU instance the model doesn't have to share with 30+
-    # other pods, which is still a real step up from the shared t3.medium
-    # pool even without a GPU. If you resolve the GPU quota/IAM issue
-    # later, swap instance_types to a g-series type + set ami_type back to
-    # "AL2023_x86_64_NVIDIA" + re-add the NVIDIA device plugin (removed
-    # below) + a nvidia.com/gpu resource request in the deployment.
-    # Tainted so nothing except Ollama (which has the matching toleration)
-    # ever gets scheduled here - this instance costs real money per hour
-    # even sitting idle, and nothing else in this app needs this much CPU.
-    ollama = {
-      instance_types = var.ollama_node_instance_types
-      capacity_type  = "ON_DEMAND"
-
-      min_size     = var.ollama_node_min_size
-      max_size     = var.ollama_node_max_size
-      desired_size = var.ollama_node_desired_size
-
-      labels = {
-        role = "ollama"
-      }
-
-      taints = {
-        dedicated = {
-          key    = "dedicated"
-          value  = "ollama"
-          effect = "NO_SCHEDULE"
-        }
-      }
-    }
   }
 }
 

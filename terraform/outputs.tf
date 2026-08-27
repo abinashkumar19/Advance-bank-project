@@ -58,6 +58,11 @@ output "transaction_history_bucket" {
   value       = module.s3.transaction_history_bucket_name
 }
 
+output "ollama_model_cache_bucket" {
+  description = "S3 bucket the ollama pod restores/seeds its model from - see k8s/services/ollama-deployment.yaml and ollama-seed-s3-job.yaml"
+  value       = module.s3.ollama_model_cache_bucket_name
+}
+
 output "transactions_history_api_url" {
   description = "Base URL of the general-purpose per-user history API Gateway (Lambda-backed, reads/writes S3)"
   value       = module.lambda.transactions_history_api_url

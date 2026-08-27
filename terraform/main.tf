@@ -26,7 +26,7 @@ terraform {
 
   # Remote state - S3 bucket + DynamoDB lock table (create once, see README).
   backend "s3" {
-    bucket = "veerabank-tfstate-080568781693-7730714"
+    bucket = "veerabank-tfstate-617632154705-7140038"
     key            = "eks-dynamodb/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "veerabank-terraform-locks"
@@ -109,11 +109,6 @@ module "eks" {
   node_min_size        = var.node_min_size
   node_max_size        = var.node_max_size
   node_desired_size    = var.node_desired_size
-
-  ollama_node_instance_types = var.ollama_node_instance_types
-  ollama_node_min_size       = var.ollama_node_min_size
-  ollama_node_max_size       = var.ollama_node_max_size
-  ollama_node_desired_size   = var.ollama_node_desired_size
 }
 
 module "dynamodb" {
@@ -251,13 +246,14 @@ module "backend_irsa" {
   eks_oidc_provider_arn   = module.eks.oidc_provider_arn
 
   policy_arns = {
-    dynamodb  = module.dynamodb.app_access_policy_arn
-    sns       = module.sns.publish_policy_arn
-    xray      = module.observability.xray_policy_arn
-    messaging = module.messaging.app_access_policy_arn
-    search    = module.search.app_access_policy_arn
-    bedrock   = module.ai.app_access_policy_arn
-    kinesis   = module.analytics.kinesis_app_access_policy_arn
+    dynamodb    = module.dynamodb.app_access_policy_arn
+    sns         = module.sns.publish_policy_arn
+    xray        = module.observability.xray_policy_arn
+    messaging   = module.messaging.app_access_policy_arn
+    search      = module.search.app_access_policy_arn
+    bedrock     = module.ai.app_access_policy_arn
+    kinesis     = module.analytics.kinesis_app_access_policy_arn
+    ollama_cache = module.s3.ollama_model_cache_access_policy_arn
   }
 }
 

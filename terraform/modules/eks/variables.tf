@@ -37,19 +37,3 @@ variable "node_max_size" {
 variable "node_desired_size" {
   type = number
 }
-
-variable "ollama_node_instance_types" {
-  type = list(string)
-}
-
-variable "ollama_node_min_size" {
-  type = number
-}
-
-variable "ollama_node_max_size" {
-  type = number
-}
-
-variable "ollama_node_desired_size" {
-  type = number
-}
