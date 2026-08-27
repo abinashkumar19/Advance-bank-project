@@ -13,7 +13,7 @@ debited - the model is never trusted to supply or invent a "from"
 account, only a recipient account number and an amount. See send_money()
 below.
 
-Tradeoff worth knowing: a small (3B-class) CPU-hosted model is nowhere
+Tradeoff worth knowing: a small (1.5B-class) CPU-hosted model is nowhere
 near as reliable at multi-step tool-calling as a hosted frontier model -
 it can occasionally skip a verification step, misread an amount, or
 answer in an unexpected format. The prompt and parsing below are written
@@ -38,7 +38,7 @@ from pydantic import BaseModel, Field
 app = FastAPI(title="Cloud Bank Chatbot Service", version="3.0.0")
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://ollama-svc.veerabank.svc.cluster.local:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:1.5b-instruct")
 
 ACCOUNTS_SERVICE_URL = os.environ.get("ACCOUNTS_SERVICE_URL", "http://accounts-svc.veerabank.svc.cluster.local")
 TRANSFERS_SERVICE_URL = os.environ.get("TRANSFERS_SERVICE_URL", "http://transfers-svc.veerabank.svc.cluster.local")
