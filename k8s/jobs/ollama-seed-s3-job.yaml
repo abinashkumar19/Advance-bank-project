@@ -1,0 +1,55 @@
+# One-time job: seeds the S3 model cache bucket from whatever the ollama
+# pod already has pulled onto its PVC. Run this ONCE, manually, after the
+# ollama Deployment has successfully pulled the model at least once (the
+# normal first-time internet pull - check with
+# `kubectl logs -n veerabank -l app=ollama` for "Ready."). Every ollama
+# pod after that restores from S3 instead (see the initContainer in
+# ollama-deployment.yaml), which is fast and predictable instead of
+# depending on Ollama's public registry every time.
+#
+# NOT applied automatically by the deploy pipeline (this file lives
+# outside k8s/services/ on purpose) - the <OLLAMA_MODEL_CACHE_BUCKET>
+# placeholder below needs the real bucket name substituted before you
+# apply it. Get it with:
+#   cd terraform && terraform output -raw ollama_model_cache_bucket
+#
+# Then, from repo root:
+#   BUCKET=$(cd terraform && terraform output -raw ollama_model_cache_bucket)
+#   sed "s#<OLLAMA_MODEL_CACHE_BUCKET>#${BUCKET}#" k8s/jobs/ollama-seed-s3-job.yaml | kubectl apply -f -
+#   kubectl logs -n veerabank -l job-name=ollama-seed-s3 -f
+#   kubectl delete job -n veerabank ollama-seed-s3   # cleanup once it's done
+#
+# Re-run this any time you change OLLAMA_MODEL to a different model, so
+# S3 has the new one too.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-seed-s3
+  namespace: veerabank
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: backend-app
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: "public.ecr.aws/aws-cli/aws-cli:latest"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Syncing /root/.ollama/ -> s3://$OLLAMA_MODEL_CACHE_BUCKET/ ..."
+              aws s3 sync /root/.ollama/ "s3://$OLLAMA_MODEL_CACHE_BUCKET/"
+              echo "Done."
+          env:
+            - name: OLLAMA_MODEL_CACHE_BUCKET
+              value: "<OLLAMA_MODEL_CACHE_BUCKET>"
+            - name: AWS_REGION
+              value: "us-east-1"
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models

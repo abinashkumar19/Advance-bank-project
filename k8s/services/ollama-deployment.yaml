@@ -7,12 +7,12 @@ metadata:
     app: ollama
 spec:
   replicas: 1
-  # A first-ever pull of the model over the internet (Ollama's own
-  # registry, not ECR) can genuinely take a while depending on network
-  # speed - this needs real margin so Kubernetes doesn't mark the
-  # rollout failed while it's still downloading. Every deploy after the
-  # first is fast (the model persists on the PVC below, survives pod
-  # restarts), but CI can't assume it isn't the first.
+  # First-ever pull (before anything's been seeded to S3, see the
+  # initContainer below) still has to go over the internet and can take a
+  # while depending on network speed. Every deploy after the one-time S3
+  # seed (see ollama-seed-s3-job.yaml) restores from S3 instead, which is
+  # both fast and predictable, similar to why ECR pulls are fast for
+  # every other service's images.
   progressDeadlineSeconds: 1800
   selector:
     matchLabels:
@@ -23,17 +23,32 @@ spec:
         app: ollama
     spec:
       serviceAccountName: backend-app
-      # Schedule exclusively onto the dedicated Ollama node group
-      # (terraform/modules/eks) - the taint there keeps every other pod
-      # off it, and this toleration + nodeSelector pair is what lets
-      # Ollama (and only Ollama) land there instead.
-      nodeSelector:
-        role: ollama
-      tolerations:
-        - key: "dedicated"
-          operator: "Equal"
-          value: "ollama"
-          effect: "NoSchedule"
+      # No nodeSelector/toleration - runs on the regular shared node pool
+      # like every other service. A dedicated node group would be faster,
+      # but creating a second EKS managed node group hit an IAM
+      # authorization wall in this account regardless of instance type
+      # (not GPU-specific - a plain m6i.2xlarge hit the identical error).
+      # Fixing that needs an AWS account admin to widen an IAM
+      # policy/PassRole scope - not something Terraform can route around.
+      # This S3-restore approach gets the real win (fast, predictable
+      # startup) without needing that resolved first.
+      initContainers:
+        - name: restore-model-from-s3
+          image: "public.ecr.aws/aws-cli/aws-cli:latest"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Attempting to restore model from s3://$OLLAMA_MODEL_CACHE_BUCKET/ ..."
+              aws s3 sync "s3://$OLLAMA_MODEL_CACHE_BUCKET/" /root/.ollama/ \
+                && echo "Restore attempt finished (empty bucket = nothing to restore yet, that's fine on first run)."
+          env:
+            - name: OLLAMA_MODEL_CACHE_BUCKET
+              value: "<OLLAMA_MODEL_CACHE_BUCKET>"
+            - name: AWS_REGION
+              value: "us-east-1"
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
       containers:
         - name: ollama
           image: "ollama/ollama:latest"
@@ -45,24 +60,18 @@ spec:
               SERVE_PID=$!
               echo "Waiting for Ollama server to come up..."
               until ollama list >/dev/null 2>&1; do sleep 2; done
-              echo "Pulling $OLLAMA_MODEL (no-op if already on the persisted volume)..."
+              echo "Pulling $OLLAMA_MODEL (no-op if already restored from S3 or on the PVC from a previous run)..."
               ollama pull "$OLLAMA_MODEL"
               echo "Ready."
               wait $SERVE_PID
           env:
-            # A dedicated (but CPU-only) node still isn't as fast as GPU
-            # inference would be, but a real 8-vCPU node the model
-            # doesn't have to share with 30+ other pods is meaningfully
-            # better than the old shared-t3.medium setup, and 7B is
-            # noticeably more reliable at the multi-step tool-calling
-            # this chatbot does (see backend/services/chatbot/app/main.py's
-            # grounding-check comments) than the original 3B model. If
-            # this is still too slow in practice, dropping back to
-            # "qwen2.5:3b-instruct" is a one-line change - just keep this
-            # in sync with OLLAMA_MODEL in
-            # k8s/services/chatbot-deployment.yaml either way.
+            # Back to the smaller model - no dedicated node this time
+            # (see the note above the initContainers), so this needs to
+            # behave on the shared t3.medium pool the same way it did
+            # originally. Must match OLLAMA_MODEL in
+            # k8s/services/chatbot-deployment.yaml.
             - name: OLLAMA_MODEL
-              value: "qwen2.5:7b-instruct"
+              value: "qwen2.5:3b-instruct"
             - name: OLLAMA_KEEP_ALIVE
               value: "-1"
           ports:
@@ -70,28 +79,21 @@ spec:
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
-          # m6i.2xlarge has 8 vCPU / 32GiB - generous headroom here since
-          # this is the only pod that will ever land on this node (see
-          # the taint/toleration above), unlike the tight t3.medium
-          # sizing the app nodes need to share across many pods. No GPU
-          # resource request - this is a standard compute instance now,
-          # see the node group comment in terraform/modules/eks/main.tf
-          # for why.
+          # CPU-only sizing for a 3B-class model (~2GB resident) sharing
+          # a t3.medium node with other pods - see the project README for
+          # the allocatable-memory math on why this specific ceiling.
           resources:
             requests:
-              cpu: "5000m"
-              memory: "12Gi"
+              cpu: "1200m"
+              memory: "2Gi"
             limits:
-              cpu: "7000m"
-              memory: "20Gi"
-          # Model pull on first boot can take a while depending on
-          # network speed - startupProbe gives it room before
-          # readiness/liveness start counting failures against it.
+              cpu: "1800m"
+              memory: "2560Mi"
           startupProbe:
             exec:
               command: ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\""]
             periodSeconds: 15
-            failureThreshold: 120 # 30 minutes of grace on first pull - matches progressDeadlineSeconds above
+            failureThreshold: 120 # 30 minutes of grace on a first (non-S3) pull - matches progressDeadlineSeconds above
           readinessProbe:
             exec:
               command: ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\""]
@@ -103,8 +105,9 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
       volumes:
-        # Persists the downloaded model across pod restarts - without
-        # this, every restart re-downloads several GB for no reason.
+        # Persists the model across pod restarts on the SAME node -
+        # doesn't help across a node replacement/reschedule elsewhere,
+        # which is exactly the gap the S3 restore step covers.
         - name: models
           persistentVolumeClaim:
             claimName: ollama-models
