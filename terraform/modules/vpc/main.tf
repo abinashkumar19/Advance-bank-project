@@ -1,18 +1,28 @@
 # ---------------------------------------------------------------------------
-# VPC - creates a new one, UNLESS one tagged for this project already exists
+# VPC - creates a new one, UNLESS var.reuse_existing_vpc is explicitly set
 # (sandbox/training AWS accounts are often capped at 1 VPC per region, so
-# reruns must reuse whatever's already there instead of trying to create
-# a second one).
+# reruns in THAT situation need to reuse whatever's already there instead
+# of trying to create a second one).
+#
+# IMPORTANT: this used to auto-detect "already exists" via a live
+# data.aws_vpcs lookup on this same project's VPC tag, and toggle `count`
+# off that. That's self-defeating: the very act of successfully creating
+# the VPC makes it show up in that lookup, so the NEXT plan (or even a
+# later refresh in the same apply) would conclude "this shouldn't exist"
+# and try to DESTROY everything under it - the VPC, NAT gateway, subnets,
+# with EKS/RDS/OpenSearch all sitting inside them. Explicit var instead:
+# the decision never changes just because the module did its job.
 # ---------------------------------------------------------------------------
 
+locals {
+  vpc_already_exists = var.reuse_existing_vpc
+}
+
 data "aws_vpcs" "existing" {
+  count = local.vpc_already_exists ? 1 : 0
   tags = {
     Name = "${var.project_name}-${var.environment}-vpc"
   }
-}
-
-locals {
-  vpc_already_exists = length(data.aws_vpcs.existing.ids) > 0
 }
 
 module "vpc" {
@@ -48,7 +58,7 @@ data "aws_subnets" "existing_private" {
   count = local.vpc_already_exists ? 1 : 0
   filter {
     name   = "vpc-id"
-    values = data.aws_vpcs.existing.ids
+    values = data.aws_vpcs.existing[0].ids
   }
   tags = {
     "kubernetes.io/role/internal-elb" = "1"
@@ -59,7 +69,7 @@ data "aws_subnets" "existing_public" {
   count = local.vpc_already_exists ? 1 : 0
   filter {
     name   = "vpc-id"
-    values = data.aws_vpcs.existing.ids
+    values = data.aws_vpcs.existing[0].ids
   }
   tags = {
     "kubernetes.io/role/elb" = "1"
@@ -70,7 +80,7 @@ data "aws_subnets" "existing_public" {
 # too, so downstream consumers (VPC gateway endpoints) can still attach.
 data "aws_route_tables" "existing_private" {
   count  = local.vpc_already_exists ? 1 : 0
-  vpc_id = data.aws_vpcs.existing.ids[0]
+  vpc_id = data.aws_vpcs.existing[0].ids[0]
   filter {
     name   = "association.subnet-id"
     values = local.existing_private_subnet_ids_raw
@@ -84,7 +94,7 @@ locals {
     data.aws_subnets.existing_public[0].ids
   ) : []
 
-  vpc_id             = local.vpc_already_exists ? data.aws_vpcs.existing.ids[0] : module.vpc[0].vpc_id
+  vpc_id             = local.vpc_already_exists ? data.aws_vpcs.existing[0].ids[0] : module.vpc[0].vpc_id
   private_subnet_ids = local.vpc_already_exists ? local.existing_private_subnet_ids_raw : module.vpc[0].private_subnets
   public_subnet_ids  = local.vpc_already_exists ? data.aws_subnets.existing_public[0].ids : module.vpc[0].public_subnets
 

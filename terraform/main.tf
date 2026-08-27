@@ -26,7 +26,7 @@ terraform {
 
   # Remote state - S3 bucket + DynamoDB lock table (create once, see README).
   backend "s3" {
-    bucket = "veerabank-tfstate-917716925736-7817630"
+    bucket = "veerabank-tfstate-617632154705-7140038"
     key            = "eks-dynamodb/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "veerabank-terraform-locks"
@@ -94,6 +94,7 @@ module "vpc" {
   private_subnet_cidrs  = var.private_subnet_cidrs
   public_subnet_cidrs   = var.public_subnet_cidrs
   eks_cluster_name      = "${var.project_name}-${var.environment}-eks"
+  reuse_existing_vpc    = var.reuse_existing_vpc
 }
 
 module "eks" {

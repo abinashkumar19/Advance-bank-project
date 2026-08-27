@@ -22,6 +22,12 @@ variable "vpc_cidr" {
   default     = "10.20.0.0/16"
 }
 
+variable "reuse_existing_vpc" {
+  description = "Set true ONLY if you already have a VPC tagged for this project/environment that you want to reuse instead of creating a new one (e.g. a sandbox account capped at 1 VPC per region). See terraform/modules/vpc/variables.tf for why this must stay a stable, deliberately-set value rather than auto-detected."
+  type        = bool
+  default     = false
+}
+
 variable "azs" {
   description = "Availability zones to spread subnets across"
   type        = list(string)
