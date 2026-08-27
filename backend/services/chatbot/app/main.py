@@ -19,8 +19,12 @@ it can occasionally skip a verification step, misread an amount, or
 answer in an unexpected format. The prompt and parsing below are written
 defensively for that reason (never trust the model's word alone - the
 account lookups and transfer itself are re-verified independently every
-time, see _run_tool). Swap OLLAMA_MODEL to something larger for better
-reliability if you add more compute (see the deployment's comments).
+time, and any account number the model didn't actually see the user type
+is rejected outright, see _run_tool). Runs on the regular shared node
+pool (CPU only) - a dedicated/GPU node would be faster and could support
+a larger, more reliable model, but that needs an EKS node-group creation
+issue resolved on the AWS account side first (see the comment above
+initContainers in k8s/services/ollama-deployment.yaml).
 """
 import json
 import os
@@ -46,17 +50,26 @@ SYSTEM_PROMPT = (
     "on their behalf using the verify_recipient_account and send_money tools.\n\n"
     "MONEY TRANSFER FLOW - follow this exactly, in order, one step at a time:\n"
     "1. Only start this flow if the user clearly says they want to send/transfer money.\n"
-    "2. Ask for the recipient's account number if they haven't given one yet.\n"
-    "3. The MOMENT you have an account number, call verify_recipient_account with it - "
-    "do not ask the user to confirm first, just verify it immediately.\n"
+    "2. If the user hasn't typed an actual account number yet, DO NOT call any tool - just "
+    "ask them for the recipient's account number and wait for their reply. Never guess, "
+    "invent, or reuse an example account number.\n"
+    "3. The MOMENT the user's own message contains a real account number, call "
+    "verify_recipient_account with exactly those digits - do not ask the user to confirm "
+    "first, just verify it immediately.\n"
     "4. If it's invalid, tell the user plainly and ask them to double check the number.\n"
     "5. If it's valid, tell the user whose account it is (the owner name the tool returned) "
     "so they can confirm it's who they meant, then ask how much to send.\n"
-    "6. The MOMENT you have a numeric amount, call send_money with the account number and "
-    "amount - do not ask for a second confirmation, the owner-name check in step 5 IS the "
-    "confirmation step.\n"
+    "6. The MOMENT you have a numeric amount, call send_money with the SAME account number "
+    "from step 3 and the amount - do not ask for a second confirmation, the owner-name check "
+    "in step 5 IS the confirmation step.\n"
     "7. Report the tool's result plainly - success with the amount and recipient, or the "
     "exact reason it failed (insufficient funds, account frozen, etc).\n\n"
+    "Example of the correct first two turns:\n"
+    'User: "I want to send money"\n'
+    'You: "Sure! What\'s the recipient\'s account number?"\n'
+    '(WRONG: calling verify_recipient_account here - no number was given yet)\n'
+    'User: "482190473311"\n'
+    "You: (call verify_recipient_account with account_number=482190473311, THEN reply based on its result)\n\n"
     "Never invent account numbers, balances, owner names, or transaction outcomes - only "
     "state facts a tool actually returned. You cannot see the user's balance or transaction "
     "history directly; if asked, point them to the Accounts or Transactions page instead. "
@@ -151,7 +164,25 @@ def _get_account_by_user(user_id: str) -> Optional[dict]:
         return None
 
 
-def _run_tool(tool_name: str, tool_input: dict, requesting_user_id: str) -> dict:
+def _run_tool(tool_name: str, tool_input: dict, requesting_user_id: str, conversation_text: str) -> dict:
+    if tool_name in ("verify_recipient_account", "send_money"):
+        account_number = str(tool_input.get("account_number", "")).strip()
+        # Defense in depth against a known failure mode of small
+        # self-hosted models: occasionally guessing/inventing an account
+        # number instead of asking the user for one, especially right
+        # after "send money" with no number given yet. Reject anything
+        # the model didn't actually see the user type, rather than
+        # trusting the tool call at face value - the digits must appear
+        # verbatim somewhere in the recent conversation text.
+        digits_only = "".join(ch for ch in account_number if ch.isdigit())
+        conversation_digits = "".join(ch for ch in conversation_text if ch.isdigit())
+        if not digits_only or digits_only not in conversation_digits:
+            return {
+                "valid": False,
+                "success": False,
+                "error": "No account number was found in what the user actually typed. Do not guess or invent one - ask the user directly for the recipient's account number.",
+            }
+
     if tool_name == "verify_recipient_account":
         account = _get_account_by_number(str(tool_input.get("account_number", "")).strip())
         if not account:
@@ -222,7 +253,7 @@ def _call_ollama(messages: list) -> dict:
             "messages": messages,
             "tools": TOOLS,
             "stream": False,
-            "options": {"temperature": 0.3},
+            "options": {"temperature": 0.1},
         },
         timeout=90,  # CPU inference on a small model can genuinely take this long, especially cold
     )
@@ -254,6 +285,11 @@ def send_message(req: ChatRequest):
         messages.append({"role": turn.role, "content": turn.content})
     messages.append({"role": "user", "content": req.message})
 
+    # Everything the user has actually typed this conversation, used by
+    # _run_tool to reject any account number the model didn't really see
+    # (see the grounding check at the top of _run_tool).
+    conversation_text = " ".join(t.content for t in req.history[-12:] if t.role == "user") + " " + req.message
+
     try:
         # Tool-use loop: the model may need one or more round trips
         # (verify, then send) before it has a final plain-text reply.
@@ -274,7 +310,7 @@ def send_message(req: ChatRequest):
                 fn = call.get("function", {})
                 name = fn.get("name", "")
                 args = _parse_tool_arguments(fn.get("arguments", {}))
-                result = _run_tool(name, args, req.user_id)
+                result = _run_tool(name, args, req.user_id, conversation_text)
                 messages.append({"role": "tool", "name": name, "content": json.dumps(result)})
 
         return {"reply": "Sorry, that's taking longer than expected - please try again."}
