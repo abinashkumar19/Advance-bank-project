@@ -113,7 +113,14 @@ def create_transaction(payload: TransactionCreate):
         "balance_after": new_balance,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    _write_history(txn_item)
+    # The balance was already mutated atomically above. If the history
+    # write fails we must NOT surface a 500 - the client would retry and
+    # the balance would be debited/credited a second time. Log and move on;
+    # the authoritative balance is already correct in DynamoDB.
+    try:
+        _write_history(txn_item)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[transactions] history write failed (balance already applied): {exc}")
     return txn_item
 
 

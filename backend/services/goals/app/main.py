@@ -103,17 +103,31 @@ def contribute(goal_id: str, payload: Contribution):
 
     adjust_balance(item["account_id"], -payload.amount)  # raises 402 if insufficient funds
 
-    new_total = Decimal(item["current_amount"]) + payload.amount
-    reached = new_total >= Decimal(item["target_amount"])
-    tbl.update_item(
+    # Atomic increment on the stored value (not a Python read-modify-write)
+    # so concurrent contributions can't clobber each other and lose money.
+    upd = tbl.update_item(
         Key={"id": goal_id},
-        UpdateExpression="SET current_amount = :c, #s = :s",
-        ExpressionAttributeNames={"#s": "status"},
-        ExpressionAttributeValues={":c": new_total, ":s": "completed" if reached else "in_progress"},
+        UpdateExpression="SET current_amount = current_amount + :amt",
+        ExpressionAttributeValues={":amt": payload.amount},
+        ReturnValues="ALL_NEW",
     )
+    new_item = upd["Attributes"]
+    new_total = Decimal(new_item["current_amount"])
+    reached = new_total >= Decimal(new_item["target_amount"])
+
+    # Flip status to completed once (only when it isn't already), still atomic.
+    if reached and new_item.get("status") != "completed":
+        tbl.update_item(
+            Key={"id": goal_id},
+            UpdateExpression="SET #s = :s",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={":s": "completed"},
+        )
+        new_item["status"] = "completed"
+
     write_audit_log(item["user_id"], "goal_contribution", {"goal_id": goal_id, "amount": str(payload.amount)})
 
-    updated = {**item, "current_amount": new_total, "status": "completed" if reached else "in_progress"}
+    updated = new_item
 
     try:
         summary = f"Goal '{item['name']}' reached! 🎉" if reached else f"₹{payload.amount} added to '{item['name']}'"

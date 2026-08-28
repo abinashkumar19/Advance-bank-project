@@ -20,6 +20,7 @@ from common.aws_clients import table
 from common.service_base import new_id, now_iso
 
 TRANSACTIONS_SERVICE_URL = os.environ.get("TRANSACTIONS_SERVICE_URL", "http://transactions-svc.veerabank.svc.cluster.local")
+ACCOUNTS_SERVICE_URL = os.environ.get("ACCOUNTS_SERVICE_URL", "http://accounts-svc.veerabank.svc.cluster.local").rstrip("/")
 
 app = FastAPI(title="VeeraBank Budgeting Service", version="1.0.0")
 router = APIRouter(prefix="/budgeting")
@@ -90,8 +91,20 @@ def get_limits(user_id: str):
 def insights(user_id: str):
     """Pulls this user's transactions and buckets them by keyword-guessed
     category, then compares each bucket against any limit they've set."""
+    # transactions-service is keyed by account_id, not user_id, so first
+    # resolve this user's account via accounts-service.
     try:
-        resp = requests.get(f"{TRANSACTIONS_SERVICE_URL}/transactions/user/{user_id}", timeout=8)
+        acct_resp = requests.get(f"{ACCOUNTS_SERVICE_URL}/accounts/by-user/{user_id}", timeout=8)
+        if acct_resp.status_code == 404:
+            # No account yet -> no spend to report.
+            return {"user_id": user_id, "total_spend": "0", "breakdown": []}
+        acct_resp.raise_for_status()
+        account_id = acct_resp.json()["account_id"]
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Could not reach accounts-service: {exc}")
+
+    try:
+        resp = requests.get(f"{TRANSACTIONS_SERVICE_URL}/transactions/{account_id}", timeout=8)
         resp.raise_for_status()
         transactions = resp.json()
     except Exception as exc:  # noqa: BLE001
@@ -99,11 +112,14 @@ def insights(user_id: str):
 
     spend_by_category: dict = {}
     for txn in transactions:
+        # transactions store amount as always-positive and use `type`
+        # ("deposit"/"withdrawal") to distinguish direction - only
+        # withdrawals count as spend.
+        if txn.get("type") != "withdrawal":
+            continue
         amount = Decimal(str(txn.get("amount", 0)))
-        if amount >= 0:
-            continue  # only debits count as "spend"
         category = _categorize(txn.get("description", ""))
-        spend_by_category[category] = spend_by_category.get(category, Decimal("0")) + abs(amount)
+        spend_by_category[category] = spend_by_category.get(category, Decimal("0")) + amount
 
     limits = {i["category"]: Decimal(str(i["monthly_limit"])) for i in get_limits(user_id)}
 

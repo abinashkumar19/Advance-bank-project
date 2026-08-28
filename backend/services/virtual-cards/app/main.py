@@ -198,7 +198,7 @@ def pay_with_card(payload: PayWithCardRequest):
         raise HTTPException(status_code=400, detail="This card is frozen - unfreeze it before using")
     if card["mode"] == "single_use" and card.get("used"):
         raise HTTPException(status_code=400, detail="This single-use card has already been used")
-    if card["mode"] == "merchant_locked" and payload.merchant_name and card.get("merchant_name") != payload.merchant_name:
+    if card["mode"] == "merchant_locked" and (not payload.merchant_name or card.get("merchant_name") != payload.merchant_name):
         raise HTTPException(status_code=403, detail=f"This card can only be used at {card['merchant_name']}")
 
     from_account_id = card["account_id"]

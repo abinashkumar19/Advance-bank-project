@@ -31,6 +31,8 @@ spec:
               value: "<SNS_USER_REGISTERED_TOPIC_ARN>"
             - name: TRANSACTIONS_SERVICE_URL
               value: "http://transactions-svc.veerabank.svc.cluster.local"
+            - name: ACCOUNTS_SERVICE_URL
+              value: "http://accounts-svc.veerabank.svc.cluster.local"
           resources:
             requests:
               cpu: "50m"

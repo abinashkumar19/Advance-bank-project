@@ -181,7 +181,13 @@ def run_due():
     see module docstring)."""
     today = date.today().isoformat()
     resp = tbl.scan()
-    due = [i for i in resp.get("Items", []) if i.get("status") == "active" and i.get("next_run_date", "9999-99-99") <= today]
+    items = resp.get("Items", [])
+    # A single Scan returns at most 1MB - keep paging or instructions
+    # beyond the first page would silently never run.
+    while "LastEvaluatedKey" in resp:
+        resp = tbl.scan(ExclusiveStartKey=resp["LastEvaluatedKey"])
+        items.extend(resp.get("Items", []))
+    due = [i for i in items if i.get("status") == "active" and i.get("next_run_date", "9999-99-99") <= today]
     results = [_execute_one(item) for item in due]
     return {"executed": len(results), "results": results}
 
