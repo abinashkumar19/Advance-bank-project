@@ -382,4 +382,3 @@ jobs:
             sleep 10
           done
           echo "### Grafana is live at: http://${GRAFANA_HOST:-<pending - check kubectl get ingress -n monitoring>}/ (user: admin, password: \`terraform output -raw grafana_admin_password\`)" >> "$GITHUB_STEP_SUMMARY"
-
