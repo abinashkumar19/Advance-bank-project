@@ -68,6 +68,7 @@ function initOtpBoxes() {
   const boxes = Array.from(document.querySelectorAll(".otp-digit"));
   boxes.forEach((box, i) => {
     box.addEventListener("input", () => {
+      clearOtpState();
       box.value = box.value.replace(/\D/g, "").slice(-1);
       if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
       maybeAutoSubmit(boxes);
@@ -104,6 +105,24 @@ function shakeOtpBoxes() {
   el.classList.remove("shake");
   void el.offsetWidth; // restart animation
   el.classList.add("shake");
+}
+function markOtpError() {
+  const el = document.getElementById("otp-boxes");
+  if (!el) return;
+  el.classList.remove("verified");
+  el.classList.add("error");
+  shakeOtpBoxes();
+}
+function markOtpVerified() {
+  const el = document.getElementById("otp-boxes");
+  if (!el) return;
+  el.classList.remove("error", "shake");
+  el.classList.add("verified");
+}
+function clearOtpState() {
+  const el = document.getElementById("otp-boxes");
+  if (!el) return;
+  el.classList.remove("error", "verified", "shake");
 }
 
 /* ---------------- Resend timer ---------------- */
@@ -193,6 +212,9 @@ async function verifyRegistrationOtp() {
     if (code.length < 6) throw new Error("Enter all 6 digits.");
     await api("/users/otp/verify", { method: "POST", body: JSON.stringify({ email: regDraft.email, code, purpose: "signup" }) });
 
+    // OTP accepted — flip the boxes green before proceeding
+    markOtpVerified();
+
     let user;
     try {
       user = await api("/users/register", { method: "POST", body: JSON.stringify(regDraft) });
@@ -220,7 +242,7 @@ async function verifyRegistrationOtp() {
     afterAuth();
   } catch (e) {
     el.innerHTML = `<div class="msg err">${e.message}</div>`;
-    shakeOtpBoxes();
+    markOtpError();
     if (btn) { btn.disabled = false; btn.innerHTML = originalLabel; }
   }
 }

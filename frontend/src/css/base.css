@@ -270,18 +270,7 @@ input:disabled, select:disabled{opacity:.5; cursor:not-allowed;}
   content:""; position:absolute; inset:0; opacity:.6; pointer-events:none; z-index:0;
   background:radial-gradient(460px 240px at 105% -15%, var(--accent-dim), transparent 62%);
 }
-.bank-card::after{
-  /* diagonal glass shine sweep */
-  content:""; position:absolute; top:-70%; left:-70%; width:240%; height:240%; z-index:0; pointer-events:none;
-  background:linear-gradient(115deg, transparent 42%, rgba(255,255,255,.07) 49%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.07) 51%, transparent 58%);
-  animation:cardShine 6s ease-in-out infinite;
-}
-@keyframes cardShine{
-  0%,100%{transform:translate(-4%,-4%);}
-  50%{transform:translate(4%,4%);}
-}
 .bank-card.frozen{filter:grayscale(.75) brightness(.7); backdrop-filter:blur(18px) saturate(40%);}
-.bank-card.frozen::after{animation:none; opacity:0;}
 .bank-card-top{display:flex; justify-content:space-between; align-items:flex-start; position:relative; z-index:1;}
 .bank-card-chip{
   width:44px; height:34px; border-radius:8px; position:relative; overflow:hidden;
@@ -351,6 +340,24 @@ input:disabled, select:disabled{opacity:.5; cursor:not-allowed;}
   20%,80%{transform:translateX(4px);}
   30%,50%,70%{transform:translateX(-7px);}
   40%,60%{transform:translateX(7px);}
+}
+
+/* --- OTP verify feedback: red boxes on failure, green boxes on success --- */
+.otp-boxes.error .otp-digit{
+  border-color:var(--danger) !important;
+  background:linear-gradient(160deg, var(--danger-dim), var(--panel)) !important;
+  box-shadow:0 0 0 3px var(--danger-dim), 0 6px 16px -8px rgba(255,92,114,.55) !important;
+  color:var(--danger) !important;
+}
+.otp-boxes.verified .otp-digit{
+  border-color:var(--ledger) !important;
+  background:linear-gradient(160deg, var(--ledger-dim), var(--panel)) !important;
+  box-shadow:0 0 0 3px var(--ledger-dim), 0 6px 16px -8px rgba(47,230,192,.55) !important;
+  color:var(--ledger) !important;
+  animation:otpVerified .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes otpVerified{
+  0%{transform:scale(1);} 45%{transform:scale(1.12);} 100%{transform:scale(1);}
 }
 
 .otp-resend{margin-top:14px; text-align:center; font-size:12px; color:var(--muted-2);}
