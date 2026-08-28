@@ -214,6 +214,14 @@ resource "aws_lambda_event_source_mapping" "users_db_sync" {
 # secret in terraform/modules/monitoring.
 resource "aws_secretsmanager_secret" "telegram" {
   name = "${var.project_name}-${var.environment}-telegram-notifications"
+  # Dev/demo environment: skip the default 30-day recovery window.
+  # Without this, deleting/recreating this secret (e.g. during iteration,
+  # or a destroy/recreate cycle) leaves it "scheduled for deletion" for
+  # 30 days, during which AWS refuses to let a new secret of the same
+  # name be created at all - the very error this comment is here to
+  # prevent. Fine to skip for dev data; reconsider for anything holding
+  # real production secrets you might need to recover.
+  recovery_window_in_days = 0
 }
 
 data "archive_file" "notification_writer" {

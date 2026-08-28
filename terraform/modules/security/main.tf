@@ -8,6 +8,10 @@
 resource "aws_secretsmanager_secret" "rds_master" {
   name        = "${var.project_name}/${var.environment}/rds-master-credentials"
   description = "Aurora MySQL (users-db) master credentials"
+  # Dev/demo environment: skip the default 30-day recovery window - see
+  # the identical comment on aws_secretsmanager_secret.telegram in
+  # terraform/modules/lambda/main.tf for why this matters.
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "rds_master" {
