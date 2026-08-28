@@ -45,7 +45,7 @@ function renderVerifyGate() {
         </div>
         <div class="gate-form">
           <div class="otp-boxes" id="otp-boxes">
-            ${[0,1,2,3,4,5].map(i => `<input class="otp-digit" id="r_otp_${i}" data-i="${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />`).join("")}
+            ${[0,1,2,3,4,5].map(i => `<input class="otp-digit" id="r_otp_${i}" data-i="${i}" inputmode="numeric" maxlength="1" autocomplete="one-time-code" placeholder=" " />`).join("")}
           </div>
           <div id="r_msg"></div>
           <button class="btn gold" id="otp-verify-btn" style="width:100%; margin-top:18px;" onclick="verifyRegistrationOtp()">Verify & create account</button>
