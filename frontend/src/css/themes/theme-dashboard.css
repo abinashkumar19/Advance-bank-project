@@ -11,3 +11,6 @@
   border-radius:20px; padding:4px;
 }
 #main.theme-dashboard .card{ box-shadow:0 20px 50px rgba(0,0,0,.35); }
+#main.theme-dashboard .pagetitle{ font-family:var(--display); font-weight:600; font-size:var(--step-4); letter-spacing:-1.5px; }
+#main.theme-dashboard .eyebrow{ color:var(--ledger); }
+#main.theme-dashboard .kpi::before{ background:linear-gradient(180deg, var(--ledger), transparent); }

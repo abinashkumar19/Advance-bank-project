@@ -6,3 +6,6 @@
   --danger:#e8695f; --danger-dim:#3a201d; --accent:var(--ledger); --accent-dim:var(--ledger-dim); --radius:16px;
   --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
 }
+#main.theme-services{ background: radial-gradient(700px 360px at 12% -10%, rgba(124,156,255,.12), transparent 60%); }
+#main.theme-services .pagetitle{ font-family:var(--display); font-weight:600; letter-spacing:-1px; }
+#main.theme-services .card{ border-radius:16px; }

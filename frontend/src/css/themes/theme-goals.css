@@ -7,3 +7,7 @@
   --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(650px 340px at 0% -10%, rgba(255,182,72,.16), transparent 60%);
 }
+#main.theme-goals .pagetitle{ font-family:var(--display); font-weight:600; font-size:var(--step-4); letter-spacing:-1.5px; }
+#main.theme-goals .card{ border-radius:18px; border-top:3px solid color-mix(in srgb, var(--ledger) 60%, var(--line)); }
+#main.theme-goals .btn{ border-radius:14px; background:linear-gradient(120deg, var(--ledger), var(--gold)); color:#241708; }
+#main.theme-goals .section-title{ font-family:var(--display); }

@@ -7,3 +7,7 @@
   --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(600px 320px at 0% -10%, rgba(95,217,126,.14), transparent 60%);
 }
+#main.theme-budgeting .card{ border-radius:16px; background-image:repeating-linear-gradient(0deg, rgba(95,217,126,.035) 0 27px, transparent 27px 28px); }
+#main.theme-budgeting .pagetitle{ letter-spacing:-.4px; }
+#main.theme-budgeting .btn{ border-radius:12px; }
+#main.theme-budgeting .kpi::before{ background:linear-gradient(180deg, var(--ledger), transparent); }

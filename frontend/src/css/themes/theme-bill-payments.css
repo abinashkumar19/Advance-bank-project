@@ -7,3 +7,7 @@
   --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(600px 320px at 0% -10%, rgba(255,157,63,.16), transparent 60%);
 }
+#main.theme-bill-payments .card{ border-radius:16px; border-left:4px solid color-mix(in srgb, var(--ledger) 55%, var(--line)); }
+#main.theme-bill-payments .pagetitle{ letter-spacing:-.4px; }
+#main.theme-bill-payments .btn{ border-radius:999px; background:linear-gradient(120deg, var(--ledger), var(--gold)); color:#241608; }
+#main.theme-bill-payments input, #main.theme-bill-payments select{ border-radius:12px; }

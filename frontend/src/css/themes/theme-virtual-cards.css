@@ -8,3 +8,11 @@
   background: radial-gradient(650px 340px at 100% -10%, rgba(224,92,255,.16), transparent 60%);
 }
 #main.theme-virtual-cards .card{ border-radius:14px; }
+#main.theme-virtual-cards{ background-image:
+    radial-gradient(650px 340px at 100% -10%, rgba(224,92,255,.16), transparent 60%),
+    linear-gradient(rgba(224,92,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(224,92,255,.05) 1px, transparent 1px);
+  background-size:auto, 30px 30px, 30px 30px; }
+#main.theme-virtual-cards .card{ border-radius:14px; box-shadow:0 0 30px rgba(224,92,255,.08), inset 0 0 0 1px rgba(224,92,255,.10); }
+#main.theme-virtual-cards .pagetitle{ letter-spacing:-.6px; text-shadow:0 0 20px rgba(224,92,255,.35); }
+#main.theme-virtual-cards .btn{ border-radius:10px; }

@@ -8,3 +8,6 @@
   background: radial-gradient(600px 320px at 0% -10%, rgba(217,148,74,.14), transparent 60%);
 }
 #main.theme-lockers .card{ border-radius:12px; }
+#main.theme-lockers .card{ border-radius:12px; border:1px solid color-mix(in srgb, var(--ledger) 30%, var(--line)); box-shadow:inset 0 1px 0 rgba(232,192,106,.12); }
+#main.theme-lockers .pagetitle{ font-family:var(--display); font-weight:600; letter-spacing:-.8px; }
+#main.theme-lockers .btn{ border-radius:10px; background:linear-gradient(180deg, var(--gold), var(--ledger)); color:#1c140c; }

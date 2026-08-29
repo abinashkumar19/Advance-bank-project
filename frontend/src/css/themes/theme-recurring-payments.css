@@ -7,3 +7,8 @@
   --display:'Space Grotesk', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(650px 340px at 100% -10%, rgba(92,124,255,.14), transparent 60%);
 }
+#main.theme-recurring-payments .card{ border-radius:20px; }
+#main.theme-recurring-payments .pagetitle{ letter-spacing:-.6px; }
+#main.theme-recurring-payments .btn{ border-radius:999px; }
+#main.theme-recurring-payments input, #main.theme-recurring-payments select{ border-radius:14px; }
+#main.theme-recurring-payments .badge{ border-radius:999px; border-style:dashed; }

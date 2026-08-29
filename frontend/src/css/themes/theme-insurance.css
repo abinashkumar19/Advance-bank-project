@@ -7,3 +7,7 @@
   --display:'Fraunces', serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(650px 340px at 100% -10%, rgba(63,169,255,.14), transparent 60%);
 }
+#main.theme-insurance .pagetitle{ font-family:var(--display); font-weight:600; letter-spacing:-1px; }
+#main.theme-insurance .card{ border-radius:18px; border-top:3px solid color-mix(in srgb, var(--ledger) 45%, var(--line)); }
+#main.theme-insurance .btn{ border-radius:14px; }
+#main.theme-insurance .badge{ border-radius:6px; }

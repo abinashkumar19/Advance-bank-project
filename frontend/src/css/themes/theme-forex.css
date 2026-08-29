@@ -7,3 +7,7 @@
   --display:'Sora', sans-serif; --sans:'Inter', sans-serif; --mono:'IBM Plex Mono', monospace;
   background: radial-gradient(650px 340px at 100% -10%, rgba(47,230,192,.14), transparent 60%);
 }
+#main.theme-forex .card{ border-radius:18px; }
+#main.theme-forex .pagetitle{ font-family:var(--mono); font-weight:600; letter-spacing:-1px; text-shadow:0 0 18px rgba(47,230,192,.35); }
+#main.theme-forex .btn{ border-radius:999px; }
+#main.theme-forex .ledger .amt{ font-family:var(--mono); }

@@ -8,3 +8,8 @@
   background: radial-gradient(600px 320px at 100% -10%, rgba(139,124,255,.16), transparent 60%);
 }
 #main.theme-webhooks .card{ border-radius:14px; }
+#main.theme-webhooks .card{ border-radius:14px; }
+#main.theme-webhooks .pagetitle{ font-family:var(--mono); font-weight:600; letter-spacing:-1px; }
+#main.theme-webhooks .btn{ border-radius:8px; font-family:var(--mono); text-transform:lowercase; letter-spacing:.4px; }
+#main.theme-webhooks input, #main.theme-webhooks select{ border-radius:8px; font-family:var(--mono); font-size:12.5px; }
+#main.theme-webhooks .idcell, #main.theme-webhooks .badge{ font-family:var(--mono); }
