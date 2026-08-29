@@ -26,7 +26,7 @@ terraform {
 
   # Remote state - S3 bucket + DynamoDB lock table (create once, see README).
   backend "s3" {
-    bucket = "veerabank-tfstate-730335469838-7940910"
+    bucket = "veerabank-tfstate-820198200129-7980974"
     key            = "eks-dynamodb/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "veerabank-terraform-locks"
