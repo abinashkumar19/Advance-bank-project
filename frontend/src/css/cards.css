@@ -92,3 +92,176 @@
   background:var(--panel); border:1px solid var(--line); color:var(--text); cursor:pointer; font-size:15px;
 }
 .card-view-actions{display:flex; justify-content:center; gap:10px; margin-top:22px;}
+
+/* =====================================================================
+   Premium card skin (real-looking Cloud Bank card)
+   Reuses .vcard / .vcard.flipped / .vcard-scene flip mechanics.
+   All visual overrides are scoped to .vcard-face.premium so nothing
+   else in the app (e.g. account .bank-card) is affected.
+   Per-type variants: .debit / .credit / .virtual.
+   ===================================================================== */
+:root{
+  --pc-gold-1:#f6dd9a; --pc-gold-2:#caa24a; --pc-gold-3:#8a6a24;
+}
+
+/* pointer-tilt: layered on top of the flip, only while not frozen */
+.vcard-scene:not(.frozen) .vcard{
+  transform: rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+}
+.vcard-scene:not(.frozen) .vcard.flipped{
+  transform: rotateX(var(--rx,0deg)) rotateY(calc(180deg + var(--ry,0deg)));
+}
+
+.vcard-face.premium{
+  padding:0;
+  border:1px solid rgba(255,255,255,.10);
+  transform-style:preserve-3d;
+}
+
+/* ---- type-specific front backgrounds ---- */
+.vcard-face.front.premium.debit{
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.10) 0%, transparent 28%),
+    radial-gradient(360px 200px at 82% 12%, rgba(95,184,201,.20), transparent 60%),
+    linear-gradient(135deg, #142c44 0%, #0b1b2b 55%, #081420 100%);
+  color:#eaf1f7;
+}
+.vcard-face.front.premium.credit{
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.12) 0%, transparent 28%),
+    radial-gradient(360px 200px at 82% 12%, rgba(246,221,154,.22), transparent 60%),
+    linear-gradient(135deg, #2a1a3a 0%, #1a1220 55%, #0b0710 100%);
+  color:#f4eefb;
+}
+.vcard-face.front.premium.virtual{
+  background:
+    linear-gradient(115deg, rgba(255,255,255,.10) 0%, transparent 28%),
+    radial-gradient(360px 200px at 82% 12%, rgba(124,92,255,.28), transparent 60%),
+    linear-gradient(135deg, #10283a 0%, #131033 55%, #0a0714 100%);
+  color:#eaf1f7;
+}
+
+/* fine brushed-metal grain + guilloche + moving sheen */
+.vcard-face.front.premium::before{
+  content:''; position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay;
+  background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px);
+}
+.pc-guilloche{
+  position:absolute; inset:0; opacity:.10; pointer-events:none;
+  background-image:repeating-radial-gradient(circle at 82% 18%, transparent 0 6px, rgba(255,255,255,.5) 6px 7px, transparent 7px 13px);
+}
+.pc-sheen{
+  position:absolute; top:-50%; left:-60%; width:60%; height:200%; pointer-events:none;
+  background:linear-gradient(75deg, transparent 0%, rgba(255,255,255,.14) 45%, rgba(180,220,255,.22) 50%, rgba(255,255,255,.14) 55%, transparent 100%);
+  transform:rotate(8deg); transition:left .9s ease;
+}
+.vcard-scene:hover .pc-sheen{ left:120%; }
+
+.pc-inner{
+  position:relative; z-index:2; height:100%;
+  padding:18px 20px 16px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  transform-style:preserve-3d;
+}
+
+.pc-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+.pc-bank{ display:flex; align-items:center; gap:9px; }
+.pc-mark{
+  width:26px; height:26px; border-radius:7px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(145deg, #5fb8c9, #2c7c8d);
+  box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.35);
+  transform:translateZ(14px);
+}
+.pc-mark svg{ width:15px; height:15px; }
+.pc-bank-name{ font-family:var(--display); font-size:13.5px; font-weight:700; letter-spacing:.05em; line-height:1.1; }
+.pc-tier{ font-size:8px; letter-spacing:.2em; text-transform:uppercase; color:var(--pc-gold-1); margin-top:2px; font-weight:600; }
+
+.pc-top-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.pc-type-tag{
+  font-size:8px; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+  color:#0b1b2b; background:#eaf1f7; padding:3px 8px; border-radius:3px; line-height:1;
+  transform:translateZ(14px); box-shadow:0 3px 5px rgba(0,0,0,.4);
+}
+.pc-contactless{ width:20px; height:20px; opacity:.9; transform:translateZ(14px); filter:drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+
+.pc-mid{ display:flex; flex-direction:column; gap:6px; transform-style:preserve-3d; }
+.pc-chip{
+  width:42px; height:32px; border-radius:6px; position:relative; overflow:hidden;
+  background:linear-gradient(155deg, var(--pc-gold-1) 0%, var(--pc-gold-2) 45%, var(--pc-gold-3) 100%);
+  box-shadow:0 2px 4px rgba(0,0,0,.5), inset 0 1px 1px rgba(255,255,255,.6);
+  transform:translateZ(22px); filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));
+}
+.pc-chip::before{
+  content:''; position:absolute; inset:4px; border:1px solid rgba(90,60,10,.55); border-radius:3px;
+  background:
+    linear-gradient(90deg, transparent 49%, rgba(90,60,10,.5) 50%, transparent 51%),
+    linear-gradient(0deg, transparent 32%, rgba(90,60,10,.45) 33% 34%, transparent 35%),
+    linear-gradient(0deg, transparent 65%, rgba(90,60,10,.45) 66% 67%, transparent 68%);
+}
+.pc-chip::after{
+  content:''; position:absolute; left:50%; top:4px; bottom:4px; width:1px; background:rgba(90,60,10,.5);
+  box-shadow:-11px 0 0 rgba(90,60,10,.35), 11px 0 0 rgba(90,60,10,.35);
+}
+
+/* the card number line reuses .vcard-number so the View-modal scale still applies */
+.vcard-face.premium .vcard-number{
+  margin-top:2px; font-size:19px; letter-spacing:2px; gap:10px;
+  color:#fdfdfd; text-shadow:0 1px 0 rgba(0,0,0,.5); transform:translateZ(18px);
+  filter:drop-shadow(0 4px 5px rgba(0,0,0,.4));
+}
+
+.pc-bottom{ display:flex; justify-content:space-between; align-items:flex-end; gap:10px; transform-style:preserve-3d; }
+.pc-field{ transform:translateZ(12px); }
+.pc-field.right{ text-align:right; }
+.pc-label{ font-size:7px; letter-spacing:.16em; text-transform:uppercase; opacity:.62; margin-bottom:2px; }
+.pc-name{ font-family:var(--mono); font-size:13px; letter-spacing:.04em; font-weight:600; }
+.pc-expiry{ font-family:var(--mono); font-size:13px; letter-spacing:.04em; }
+
+.pc-netwrap{ display:flex; align-items:center; gap:6px; transform:translateZ(14px); }
+.pc-dual{ position:relative; width:38px; height:24px; flex:none; filter:drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.pc-dual .c{ position:absolute; top:0; width:24px; height:24px; border-radius:50%; }
+.pc-dual .c1{ left:0; background:radial-gradient(circle at 35% 30%, #ff8a6b, #d63b2f 70%); }
+.pc-dual .c2{ left:14px; background:radial-gradient(circle at 35% 30%, #ffcf5c, #e7a422 70%); mix-blend-mode:screen; }
+.pc-network{ font-style:normal; font-weight:800; font-size:16px; letter-spacing:-.01em;
+  background:linear-gradient(180deg,#fff,#c9d8e6 70%); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+
+/* ---------- premium BACK ---------- */
+.vcard-face.back.premium{
+  background:linear-gradient(160deg, #0b1b2b 0%, #0a1420 100%);
+  padding:0; display:flex; flex-direction:column; color:#eaf1f7;
+}
+.pc-back-inner{ position:relative; z-index:2; height:100%; display:flex; flex-direction:column; }
+.pc-magstripe{ margin-top:22px; height:40px; background:repeating-linear-gradient(180deg,#17181a 0 2px,#101112 2px 4px); box-shadow:inset 0 2px 4px rgba(0,0,0,.6); }
+.pc-back-body{ padding:14px 20px; display:flex; flex-direction:column; gap:10px; flex:1; transform-style:preserve-3d; }
+.pc-sig-row{ display:flex; align-items:center; gap:10px; }
+.pc-sig-panel{ flex:1; height:28px; border-radius:3px; padding-left:10px; display:flex; align-items:center;
+  background:repeating-linear-gradient(115deg,#d8d3c2 0 3px,#cfc9b6 3px 6px); box-shadow:0 4px 6px rgba(0,0,0,.35); transform:translateZ(10px); }
+.pc-sig-script{ font-family:'Segoe Script','Brush Script MT',cursive; font-size:14px; color:#2a2a2a; opacity:.75; transform:rotate(-2deg); }
+.pc-cvv-box{ width:52px; height:28px; background:#f2efe6; border-radius:3px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:12px; color:#222; letter-spacing:1px; transform:translateZ(16px); box-shadow:0 5px 7px rgba(0,0,0,.4); }
+.pc-fine{ font-size:8px; line-height:1.5; color:var(--muted-2); max-width:94%; }
+.pc-back-footer{ margin-top:auto; display:flex; align-items:center; justify-content:space-between; padding-top:6px; transform-style:preserve-3d; }
+.pc-support{ font-size:8.5px; letter-spacing:.03em; color:var(--muted-2); line-height:1.5; }
+.pc-holo{ width:26px; height:26px; border-radius:50%;
+  background:conic-gradient(from 90deg,#ff9ad5,#9ad5ff,#d5ff9a,#ffd59a,#ff9ad5);
+  filter:saturate(1.3) brightness(1.05); box-shadow:0 0 0 1px rgba(255,255,255,.4),0 2px 4px rgba(0,0,0,.5); transform:translateZ(18px); }
+
+/* View-modal upscale for premium faces */
+.card-view-inner .vcard-face.premium .pc-inner{ padding:30px 34px 28px; }
+.card-view-inner .vcard-face.premium .vcard-number{ font-size:28px; letter-spacing:4px; }
+.card-view-inner .pc-bank-name{ font-size:20px; }
+.card-view-inner .pc-mark{ width:34px; height:34px; }
+.card-view-inner .pc-chip{ width:56px; height:42px; }
+.card-view-inner .pc-name, .card-view-inner .pc-expiry{ font-size:17px; }
+.card-view-inner .pc-network{ font-size:22px; }
+.card-view-inner .pc-type-tag{ font-size:10px; }
+.card-view-inner .pc-back-body{ padding:24px 34px; gap:16px; }
+.card-view-inner .pc-magstripe{ height:52px; margin-top:34px; }
+.card-view-inner .pc-fine{ font-size:11px; }
+
+@media (prefers-reduced-motion: reduce){
+  .vcard-scene:not(.frozen) .vcard{ transition:none; }
+  .pc-sheen{ transition:none; }
+}

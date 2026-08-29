@@ -51,22 +51,22 @@ async function doCreateVirtualCard() {
     const c = await api("/virtual-cards/", { method: "POST", body: JSON.stringify(body) });
     el.innerHTML = `
       <div class="msg ok" style="margin-bottom:12px;">Card created — this is the only time the full number and CVV are shown.</div>
-      <div class="bank-card fade-in">
-        <div class="bank-card-top">
-          <div class="bank-card-chip"></div>
-          <div class="bank-card-mark"><span></span><span></span></div>
-        </div>
-        <div class="bank-card-number" onclick="navigator.clipboard.writeText('${c.card_number}'); toast('Card number copied.')" title="Click to copy">
-          ${formatCardNumber(c.card_number)}
-        </div>
-        <div class="bank-card-bottom">
-          <div class="bank-card-name">${currentUser.full_name}</div>
-          <div class="bank-card-meta">
-            <div class="label">Exp / CVV</div>
-            <div class="value">${c.expiry_month}/${c.expiry_year} · ${c.cvv}</div>
-          </div>
+      <div class="vcard-scene">
+        <div class="vcard" onclick="this.classList.toggle('flipped')">
+          ${premiumCardFaces({
+            type: "virtual",
+            holder: (currentUser.full_name || "").toUpperCase(),
+            signature: currentUser.full_name || "",
+            number: formatCardNumber(c.card_number),
+            expiry: `${c.expiry_month}/${String(c.expiry_year).slice(-2)}`,
+            cvv: c.cvv,
+            network: "CB",
+            tier: "Virtual",
+            note: `Virtual card${c.merchant_name ? ` locked to ${c.merchant_name}` : ""} issued by ${CARD_BANK_NAME}. Save these details now — the full number and CVV are shown only once.`,
+          })}
         </div>
       </div>
+      <p class="hint" style="margin-top:8px;">Tap the card to flip it and see the CVV.</p>
     `;
     toast("Virtual card created."); loadVirtualCards();
   } catch (e) { el.innerHTML = `<div class="msg err">${e.message}</div>`; }
@@ -99,23 +99,27 @@ async function loadVirtualCards() {
   const box = document.getElementById("vc_list");
   try {
     const items = await api(`/virtual-cards/user/${currentUser.user_id}`);
-    box.innerHTML = items.length ? `<div class="grid cols-2">${items.map(c => `
+    box.innerHTML = items.length ? `<div class="card-wall">${items.map(c => {
+      const frozen = c.status !== 'active';
+      const expiry = `${c.expiry_month}/${String(c.expiry_year).slice(-2)}`;
+      const faces = premiumCardFaces({
+        type: "virtual",
+        holder: (currentUser.full_name || "").toUpperCase(),
+        signature: currentUser.full_name || "",
+        number: c.card_number_masked,
+        expiry,
+        cvv: "•••",
+        frozen,
+        network: "CB",
+        tier: "Virtual",
+        note: `Virtual card${c.merchant_name ? ` locked to ${c.merchant_name}` : ""} issued by ${CARD_BANK_NAME}. The full number and CVV are shown only once, at creation. Freeze or void it anytime from the app.`,
+      });
+      return `
       <div class="fade-in">
-        <div class="bank-card ${c.status === 'frozen' ? 'frozen' : ''}">
-          <div class="bank-card-top">
-            <div class="bank-card-chip"></div>
-            <div class="bank-card-mark"><span></span><span></span></div>
-          </div>
-          <div class="bank-card-number">${c.card_number_masked}</div>
-          <div class="bank-card-bottom">
-            <div class="bank-card-name">${c.merchant_name || currentUser.full_name}</div>
-            <div class="bank-card-meta">
-              <div class="label">Exp</div>
-              <div class="value">${c.expiry_month}/${c.expiry_year}</div>
-            </div>
-          </div>
+        <div class="vcard-scene ${frozen ? 'frozen' : ''}">
+          <div class="vcard" onclick="this.classList.toggle('flipped')">${faces}</div>
         </div>
-        <div class="split" style="margin-top:10px;">
+        <div class="vcard-meta-row">
           ${badge('', c.status)}
           <span class="hint" style="text-transform:capitalize;">${c.mode.replace('_',' ')}</span>
         </div>
@@ -125,7 +129,8 @@ async function loadVirtualCards() {
           ${c.status !== 'voided' ? `<button class="btn ghost sm" onclick="voidVc('${c.id}')">Void</button>` : ''}
         </div>
       </div>
-    `).join("")}</div>` : `<div class="empty"><div class="big">No virtual cards yet</div>Create one above.</div>`;
+    `; }).join("")}</div>` : `<div class="empty"><div class="big">No virtual cards yet</div>Create one above.</div>`;
+    initCardTilt();
   } catch (e) { box.innerHTML = `<div class="empty">${e.message}</div>`; }
 }
 async function freezeVc(id) { try { await api(`/virtual-cards/${id}/freeze`, { method: "PATCH" }); toast("Frozen."); loadVirtualCards(); } catch (e) { toast(e.message, false); } }
